@@ -419,9 +419,13 @@ function fmtDate(d){
 /* ---------- state ---------- */
 let members = [];
 let records = {}; // memberId -> [records] sorted by date asc
+let milestones = {}; // memberId -> [milestones] sorted by date asc
+let workouts = {}; // memberId -> [workouts] sorted by date asc
 let currentView = { name:'list' }; // list | detail | addMember | addRecord
 let unsubMembers = null;
 let recordUnsubs = {};
+let milestoneUnsubs = {};
+let workoutUnsubs = {};
 
 const membersCol = collection(db, 'members');
 
@@ -430,6 +434,8 @@ function listenMembers(){
     members = snap.docs.map(d=>({id:d.id, ...d.data()}));
     members.forEach(m=>{
       if(!recordUnsubs[m.id]) listenRecords(m.id);
+      if(m.type==='child' && !milestoneUnsubs[m.id]) listenMilestones(m.id);
+      if(m.type==='parent' && !workoutUnsubs[m.id]) listenWorkouts(m.id);
     });
     render();
   });
@@ -439,6 +445,22 @@ function listenRecords(memberId){
   const col = collection(db, 'members', memberId, 'records');
   recordUnsubs[memberId] = onSnapshot(query(col, orderBy('date','asc')), (snap)=>{
     records[memberId] = snap.docs.map(d=>({id:d.id, ...d.data()}));
+    render();
+  });
+}
+
+function listenMilestones(memberId){
+  const col = collection(db, 'members', memberId, 'milestones');
+  milestoneUnsubs[memberId] = onSnapshot(query(col, orderBy('date','asc')), (snap)=>{
+    milestones[memberId] = snap.docs.map(d=>({id:d.id, ...d.data()}));
+    render();
+  });
+}
+
+function listenWorkouts(memberId){
+  const col = collection(db, 'members', memberId, 'workouts');
+  workoutUnsubs[memberId] = onSnapshot(query(col, orderBy('date','asc')), (snap)=>{
+    workouts[memberId] = snap.docs.map(d=>({id:d.id, ...d.data()}));
     render();
   });
 }
@@ -454,6 +476,24 @@ async function updateMember(memberId, data){
 async function addRecord(memberId, data){
   const col = collection(db, 'members', memberId, 'records');
   await addDoc(col, data);
+}
+
+async function addMilestone(memberId, data){
+  const col = collection(db, 'members', memberId, 'milestones');
+  await addDoc(col, data);
+}
+
+async function removeMilestone(memberId, milestoneId){
+  await deleteDoc(doc(db, 'members', memberId, 'milestones', milestoneId));
+}
+
+async function addWorkout(memberId, data){
+  const col = collection(db, 'members', memberId, 'workouts');
+  await addDoc(col, data);
+}
+
+async function removeWorkout(memberId, workoutId){
+  await deleteDoc(doc(db, 'members', memberId, 'workouts', workoutId));
 }
 
 async function removeRecord(memberId, recordId){
@@ -495,6 +535,49 @@ function renderHeader(){
     </header>`;
 }
 
+function renderFamilySummary(){
+  if(members.length===0) return '';
+  const now = new Date();
+  const cutoff = new Date(now.getTime() - 30*24*60*60*1000);
+
+  const lines = [];
+  members.forEach(m=>{
+    const recs = (records[m.id]||[]).filter(r=>r.height!=null || r.weight!=null);
+    if(recs.length===0) return;
+    const recent = recs.filter(r=>new Date(r.date) >= cutoff);
+    const last = recs[recs.length-1];
+
+    if(m.type==='child'){
+      if(recent.length>1){
+        const first = recent[0];
+        const hDiff = (last.height && first.height) ? (last.height-first.height).toFixed(1) : null;
+        if(hDiff!==null){
+          lines.push(`<div class="record-item"><span>${m.emoji||'🧒'} ${m.name}</span><span style="color:var(--accent);font-weight:700;">최근 30일 +${hDiff}cm</span></div>`);
+        }
+      }
+    } else {
+      const wt = workouts[m.id]||[];
+      const recentWorkouts = wt.filter(w=>new Date(w.date) >= cutoff);
+      const totalMin = recentWorkouts.reduce((s,w)=>s+(w.minutes||0),0);
+      let weightPart = '';
+      if(m.targetWeight && last.weight){
+        const remaining = (last.weight - m.targetWeight).toFixed(1);
+        weightPart = `목표까지 ${remaining>0?remaining:0}kg`;
+      } else if(last.weight){
+        weightPart = `${last.weight}kg`;
+      }
+      lines.push(`<div class="record-item"><span>${m.emoji||'🙂'} ${m.name}</span><span style="color:var(--accent);font-weight:700;">${weightPart}${recentWorkouts.length>0?` · 운동 ${recentWorkouts.length}회 (${totalMin}분)`:''}</span></div>`);
+    }
+  });
+
+  if(lines.length===0) return '';
+  return `
+    <div class="card">
+      <h3 style="margin:0 0 10px;font-size:15px;">최근 30일 가족 요약</h3>
+      ${lines.join('')}
+    </div>`;
+}
+
 function renderList(){
   const children = members.filter(m=>m.type==='child');
   const parents = members.filter(m=>m.type==='parent');
@@ -517,6 +600,7 @@ function renderList(){
 
   return `
     ${renderHeader()}
+    ${renderFamilySummary()}
     ${members.length===0 ? `
       <div class="empty">
         <div class="display">가족 구성원을 추가해보세요</div>
@@ -610,10 +694,48 @@ function renderDetail(memberId){
 
   const recordListItems = recs.slice().reverse().map(r=>`
     <div class="record-item">
-      <span>${fmtDate(r.date)} · ${r.height?r.height+'cm ':''}${r.weight?r.weight+'kg':''}</span>
+      <span>${fmtDate(r.date)} · ${r.height?r.height+'cm ':''}${r.weight?r.weight+'kg':''}${r.note?` <span style="color:var(--muted);">· ${r.note}</span>`:''}</span>
       <button class="delete-x" data-del-record="${m.id}|${r.id}">✕</button>
     </div>
   `).join('') || '<div style="color:var(--muted);font-size:13px;">기록 없음</div>';
+
+  let milestoneBlock = '';
+  if(isChild){
+    const ms = (milestones[m.id]||[]).slice().reverse();
+    const items = ms.map(item=>`
+      <div class="record-item">
+        <span>${fmtDate(item.date)} · ${item.title}</span>
+        <button class="delete-x" data-del-milestone="${m.id}|${item.id}">✕</button>
+      </div>
+    `).join('') || '<div style="color:var(--muted);font-size:13px;">아직 기록된 마일스톤이 없어요</div>';
+    milestoneBlock = `
+      <div class="card">
+        <h3 style="margin:0 0 10px;font-size:15px;">성장 마일스톤</h3>
+        ${items}
+        <button class="ghost" id="btn-add-milestone" style="margin-top:12px;">+ 마일스톤 추가</button>
+      </div>`;
+  }
+
+  let workoutBlock = '';
+  if(!isChild){
+    const wt = (workouts[m.id]||[]).slice().reverse();
+    const cutoff = new Date(Date.now() - 30*24*60*60*1000);
+    const recentCount = wt.filter(w=>new Date(w.date)>=cutoff).length;
+    const recentMin = wt.filter(w=>new Date(w.date)>=cutoff).reduce((s,w)=>s+(w.minutes||0),0);
+    const items = wt.map(w=>`
+      <div class="record-item">
+        <span>${fmtDate(w.date)} · ${w.type}${w.minutes?` · ${w.minutes}분`:''}</span>
+        <button class="delete-x" data-del-workout="${m.id}|${w.id}">✕</button>
+      </div>
+    `).join('') || '<div style="color:var(--muted);font-size:13px;">아직 운동 기록이 없어요</div>';
+    workoutBlock = `
+      <div class="card">
+        <h3 style="margin:0 0 10px;font-size:15px;">운동 기록</h3>
+        ${wt.length>0 ? `<div class="note" style="margin-top:0;margin-bottom:12px;">최근 30일 ${recentCount}회 · ${recentMin}분</div>`:''}
+        ${items}
+        <button class="ghost" id="btn-add-workout" style="margin-top:12px;">+ 운동 기록 추가</button>
+      </div>`;
+  }
 
   return `
     <button class="back-btn" id="btn-back">← 목록으로</button>
@@ -642,6 +764,9 @@ function renderDetail(memberId){
       <h3 style="margin:0 0 10px;font-size:15px;">전체 기록</h3>
       ${recordListItems}
     </div>
+
+    ${milestoneBlock}
+    ${workoutBlock}
 
     <button class="danger" id="btn-del-member">프로필 삭제</button>
   `;
@@ -711,7 +836,40 @@ function renderModals(){
           <label>몸무게 (kg)</label>
           <input id="r-weight" type="number" step="0.1" placeholder="예: 71.2" />
           `}
+          <label>메모 (선택)</label>
+          <input id="r-note" placeholder="예: 감기로 며칠 못 먹음" />
           <button class="primary" id="save-record" style="margin-top:18px;">저장하기</button>
+        </div>
+      </div>`;
+  }
+  if(currentView.modal==='addMilestone'){
+    return `
+      <div class="modal-bg" id="modal-bg">
+        <div class="modal">
+          <button class="modal-close" id="modal-close">✕</button>
+          <h3>마일스톤 추가</h3>
+          <div class="subtitle">첫 걸음, 첫 이빨, 예방접종 같은 순간을 남겨보세요.</div>
+          <label>날짜</label>
+          <input id="ms-date" type="date" value="${new Date().toISOString().slice(0,10)}" />
+          <label>내용</label>
+          <input id="ms-title" placeholder="예: 첫 걸음" />
+          <button class="primary" id="save-milestone" style="margin-top:18px;">저장하기</button>
+        </div>
+      </div>`;
+  }
+  if(currentView.modal==='addWorkout'){
+    return `
+      <div class="modal-bg" id="modal-bg">
+        <div class="modal">
+          <button class="modal-close" id="modal-close">✕</button>
+          <h3>운동 기록 추가</h3>
+          <label>날짜</label>
+          <input id="wk-date" type="date" value="${new Date().toISOString().slice(0,10)}" />
+          <label>운동 종류</label>
+          <input id="wk-type" placeholder="예: 러닝, 웨이트, 요가" />
+          <label>시간 (분)</label>
+          <input id="wk-minutes" type="number" placeholder="예: 40" />
+          <button class="primary" id="save-workout" style="margin-top:18px;">저장하기</button>
         </div>
       </div>`;
   }
@@ -870,14 +1028,65 @@ function bindEvents(){
     const heightEl = document.getElementById('r-height');
     const height = heightEl ? heightEl.value : '';
     const weight = document.getElementById('r-weight').value;
+    const note = document.getElementById('r-note').value.trim();
     if(!date || (!height && !weight)){ showToast('날짜와 기록할 값을 입력해주세요'); return; }
     const data = { date };
     if(height) data.height = parseFloat(height);
     if(weight) data.weight = parseFloat(weight);
+    if(note) data.note = note;
     await addRecord(currentView.memberId, data);
     delete currentView.modal;
     showToast('기록을 저장했어요');
   };
+
+  const addMilestoneBtn = document.getElementById('btn-add-milestone');
+  if(addMilestoneBtn) addMilestoneBtn.onclick = ()=>{ currentView.modal='addMilestone'; render(); };
+
+  const saveMilestoneBtn = document.getElementById('save-milestone');
+  if(saveMilestoneBtn) saveMilestoneBtn.onclick = async ()=>{
+    const date = document.getElementById('ms-date').value;
+    const title = document.getElementById('ms-title').value.trim();
+    if(!date || !title){ showToast('날짜와 내용을 입력해주세요'); return; }
+    await addMilestone(currentView.memberId, { date, title });
+    delete currentView.modal;
+    showToast('마일스톤을 저장했어요');
+  };
+
+  document.querySelectorAll('[data-del-milestone]').forEach(elm=>{
+    elm.onclick = async ()=>{
+      const [memberId, msId] = elm.dataset.delMilestone.split('|');
+      if(confirm('이 마일스톤을 삭제할까요?')){
+        await removeMilestone(memberId, msId);
+        showToast('삭제했어요');
+      }
+    };
+  });
+
+  const addWorkoutBtn = document.getElementById('btn-add-workout');
+  if(addWorkoutBtn) addWorkoutBtn.onclick = ()=>{ currentView.modal='addWorkout'; render(); };
+
+  const saveWorkoutBtn = document.getElementById('save-workout');
+  if(saveWorkoutBtn) saveWorkoutBtn.onclick = async ()=>{
+    const date = document.getElementById('wk-date').value;
+    const type = document.getElementById('wk-type').value.trim();
+    const minutes = document.getElementById('wk-minutes').value;
+    if(!date || !type){ showToast('날짜와 운동 종류를 입력해주세요'); return; }
+    const data = { date, type };
+    if(minutes) data.minutes = parseInt(minutes);
+    await addWorkout(currentView.memberId, data);
+    delete currentView.modal;
+    showToast('운동 기록을 저장했어요');
+  };
+
+  document.querySelectorAll('[data-del-workout]').forEach(elm=>{
+    elm.onclick = async ()=>{
+      const [memberId, wkId] = elm.dataset.delWorkout.split('|');
+      if(confirm('이 운동 기록을 삭제할까요?')){
+        await removeWorkout(memberId, wkId);
+        showToast('삭제했어요');
+      }
+    };
+  });
 
   document.querySelectorAll('[data-del-record]').forEach(elm=>{
     elm.onclick = async ()=>{
