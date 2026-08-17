@@ -4,135 +4,131 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
 <title>Healthamily · 우리 가족 성장 기록</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
 <style>
   :root{
-    --paper:#f6f2ea;
-    --ink:#26332b;
-    --pine:#3f6b53;
-    --pine-dark:#2b4a3a;
-    --clay:#d97a5c;
-    --sky:#5b7fa6;
-    --line:#dcd3c1;
+    --bg:#ffffff;
+    --ink:#191f28;
+    --muted:#8b95a1;
+    --line:#f2f3f5;
+    --accent:#16a34a;
+    --accent-soft:#e8f7ee;
+    --clay:#f97316;
+    --danger:#ef4444;
+    --danger-soft:#fdeaea;
     --card:#ffffff;
-    --muted:#7a7367;
   }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;}
   body{
-    background:var(--paper);
+    background:var(--bg);
     color:var(--ink);
-    font-family:'Work Sans', sans-serif;
+    font-family:'Pretendard Variable', Pretendard, -apple-system, sans-serif;
     min-height:100vh;
     -webkit-font-smoothing:antialiased;
   }
   h1,h2,h3,.display{
-    font-family:'Fraunces', serif;
-    font-weight:600;
-    letter-spacing:-0.01em;
+    font-family:'Pretendard Variable', Pretendard, sans-serif;
+    font-weight:800;
+    letter-spacing:-0.02em;
   }
   .wrap{
-    max-width:720px;
+    max-width:640px;
     margin:0 auto;
-    padding:24px 18px 80px;
+    padding:36px 22px 90px;
   }
   header.top{
     display:flex;
-    align-items:baseline;
+    align-items:center;
     justify-content:space-between;
-    border-bottom:2px solid var(--ink);
-    padding-bottom:14px;
-    margin-bottom:22px;
+    margin-bottom:36px;
   }
   header.top h1{
-    font-size:26px;
+    font-size:22px;
     margin:0;
-    color:var(--pine-dark);
+    color:var(--ink);
   }
-  header.top h1 span{color:var(--clay);}
+  header.top h1 span{color:var(--accent);}
   .subtitle{
-    font-size:12px;
-    color:var(--muted);
-    margin-top:4px;
-  }
-  nav.tabs{
-    display:flex;
-    gap:8px;
-    margin-bottom:20px;
-    overflow-x:auto;
-    padding-bottom:2px;
-  }
-  nav.tabs button{
-    flex:0 0 auto;
-    background:none;
-    border:1.5px solid var(--line);
-    color:var(--muted);
-    padding:8px 14px;
-    border-radius:999px;
-    font-family:'Work Sans',sans-serif;
     font-size:13px;
-    font-weight:600;
-    cursor:pointer;
-    transition:all .15s ease;
-  }
-  nav.tabs button.active{
-    background:var(--pine-dark);
-    border-color:var(--pine-dark);
-    color:#fff;
+    color:var(--muted);
+    margin-top:3px;
+    font-weight:500;
   }
   .card{
     background:var(--card);
-    border:1.5px solid var(--line);
-    border-radius:14px;
-    padding:20px;
-    margin-bottom:16px;
+    border:1px solid var(--line);
+    border-radius:20px;
+    padding:26px;
+    margin-bottom:20px;
+    box-shadow:0 2px 10px rgba(25,31,40,0.04);
   }
+  .section-label{
+    font-size:12px;
+    font-weight:700;
+    color:var(--muted);
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    margin:28px 0 12px;
+  }
+  .section-label:first-child{margin-top:0;}
   .member-row{
     display:flex;
     align-items:center;
     justify-content:space-between;
-    padding:14px 16px;
-    border:1.5px solid var(--line);
-    border-radius:12px;
-    margin-bottom:10px;
+    padding:16px 4px;
+    border-bottom:1px solid var(--line);
     cursor:pointer;
-    background:var(--card);
-    transition:border-color .15s ease;
   }
-  .member-row:hover{border-color:var(--pine);}
-  .member-row .name{font-weight:600; font-size:16px;}
-  .member-row .meta{font-size:12px; color:var(--muted); margin-top:2px;}
-  .tag{
-    font-size:11px;
-    font-weight:700;
-    padding:3px 9px;
-    border-radius:999px;
-    color:#fff;
+  .member-row:last-child{border-bottom:none;}
+  .member-row .left{display:flex; align-items:center; gap:14px;}
+  .avatar{
+    width:44px; height:44px;
+    border-radius:50%;
+    background:var(--accent-soft);
+    display:flex; align-items:center; justify-content:center;
+    font-size:22px;
+    flex-shrink:0;
   }
-  .tag.child{background:var(--pine);}
-  .tag.parent{background:var(--sky);}
+  .avatar.lg{width:60px; height:60px; font-size:30px;}
+  .member-row .name{font-weight:700; font-size:16px;}
+  .member-row .meta{font-size:12.5px; color:var(--muted); margin-top:2px; font-weight:500;}
+  .member-row .chev{color:var(--muted); font-size:18px;}
   button.primary{
-    background:var(--pine-dark);
+    background:var(--accent);
     color:#fff;
     border:none;
-    padding:12px 18px;
-    border-radius:10px;
-    font-family:'Work Sans',sans-serif;
-    font-weight:600;
+    padding:15px 18px;
+    border-radius:14px;
+    font-family:inherit;
+    font-weight:700;
+    font-size:14.5px;
+    cursor:pointer;
+    width:100%;
+    box-shadow:0 4px 12px rgba(22,163,74,0.22);
+  }
+  button.primary:active{opacity:.85;}
+  button.danger{
+    background:var(--danger-soft);
+    color:var(--danger);
+    border:none;
+    padding:15px 18px;
+    border-radius:14px;
+    font-family:inherit;
+    font-weight:700;
     font-size:14px;
     cursor:pointer;
     width:100%;
   }
-  button.primary:active{opacity:.85;}
+  button.danger:active{opacity:.85;}
   button.ghost{
-    background:none;
-    border:1.5px solid var(--line);
-    color:var(--ink);
-    padding:10px 16px;
-    border-radius:10px;
-    font-weight:600;
+    background:var(--accent-soft);
+    border:none;
+    color:var(--accent);
+    padding:11px 16px;
+    border-radius:12px;
+    font-weight:700;
     font-size:13px;
     cursor:pointer;
   }
@@ -148,19 +144,21 @@
   label{
     display:block;
     font-size:12px;
-    font-weight:600;
+    font-weight:700;
     color:var(--muted);
-    margin:12px 0 4px;
+    margin:16px 0 6px;
   }
   input, select{
     width:100%;
-    padding:11px 12px;
-    border:1.5px solid var(--line);
-    border-radius:9px;
-    font-family:'Work Sans',sans-serif;
+    padding:13px 14px;
+    border:1px solid var(--line);
+    border-radius:12px;
+    font-family:inherit;
     font-size:15px;
-    background:#fffdf9;
+    font-weight:500;
+    background:#f9fafb;
   }
+  input:focus, select:focus{ outline:2px solid var(--accent); outline-offset:1px; }
   .row2{display:flex; gap:10px;}
   .row2 > div{flex:1;}
   .back-btn{
@@ -169,112 +167,117 @@
     gap:6px;
     background:none;
     border:none;
-    color:var(--pine-dark);
+    color:var(--muted);
     font-weight:600;
     font-size:14px;
     cursor:pointer;
-    padding:0 0 14px;
+    padding:0 0 20px;
   }
-  .doorframe{
-    position:relative;
-    background:linear-gradient(180deg, #fffdf9, #f9f4ec);
-    border:1.5px solid var(--line);
-    border-radius:14px;
-    padding:18px 14px 18px 54px;
-    margin:16px 0;
-    overflow:hidden;
+  .emoji-grid{
+    display:grid;
+    grid-template-columns:repeat(7, 1fr);
+    gap:8px;
+    margin-top:6px;
   }
-  .doorframe .mark{
-    position:relative;
+  .emoji-grid button{
+    background:#f9fafb;
+    border:1px solid var(--line);
+    border-radius:12px;
+    font-size:20px;
+    padding:8px 0;
+    cursor:pointer;
+  }
+  .emoji-grid button.selected{
+    background:var(--accent-soft);
+    border-color:var(--accent);
+  }
+  .marks-list{
+    margin-top:18px;
+  }
+  .marks-list .mark{
     display:flex;
     align-items:center;
-    height:34px;
-    border-bottom:1px dashed var(--line);
+    justify-content:space-between;
+    padding:11px 0;
+    border-bottom:1px solid var(--line);
   }
-  .doorframe .mark:last-child{border-bottom:none;}
-  .doorframe .mark .stub{
-    position:absolute;
-    left:-42px;
-    width:34px;
-    height:2px;
-    background:var(--clay);
-  }
-  .doorframe .mark .label{
-    font-size:12px;
+  .marks-list .mark:last-child{border-bottom:none;}
+  .marks-list .mark .label{
+    font-size:13.5px;
+    font-weight:700;
     color:var(--ink);
-    font-weight:600;
   }
-  .doorframe .mark .date{
-    font-size:11px;
+  .marks-list .mark .date{
+    font-size:12px;
     color:var(--muted);
-    margin-left:8px;
+    font-weight:500;
   }
   .stat-grid{
     display:grid;
     grid-template-columns:1fr 1fr;
     gap:10px;
-    margin-top:14px;
+    margin-top:18px;
   }
   .stat-box{
-    background:#fbf8f2;
-    border:1.5px solid var(--line);
-    border-radius:10px;
-    padding:12px 14px;
+    background:#f9fafb;
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:14px 16px;
   }
   .stat-box .num{
-    font-family:'Fraunces',serif;
-    font-size:22px;
-    font-weight:700;
-    color:var(--pine-dark);
+    font-size:21px;
+    font-weight:800;
+    color:var(--ink);
   }
   .stat-box.clay .num{color:var(--clay);}
   .stat-box .lbl{
-    font-size:11px;
-    color:var(--muted);
-    margin-top:2px;
-  }
-  .note{
     font-size:11.5px;
     color:var(--muted);
-    background:#f2ede1;
-    border-left:3px solid var(--clay);
-    padding:9px 12px;
-    border-radius:6px;
-    margin-top:14px;
-    line-height:1.5;
+    margin-top:3px;
+    font-weight:600;
+  }
+  .note{
+    font-size:12px;
+    color:var(--muted);
+    background:var(--accent-soft);
+    padding:11px 14px;
+    border-radius:12px;
+    margin-top:16px;
+    line-height:1.55;
+    font-weight:500;
   }
   .chart-box{
-    margin-top:10px;
-    background:#fffdf9;
-    border:1.5px solid var(--line);
-    border-radius:12px;
-    padding:14px 10px;
+    margin-top:16px;
+    background:#f9fafb;
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:16px 12px;
   }
   .empty{
     text-align:center;
-    padding:40px 20px;
+    padding:50px 20px;
     color:var(--muted);
   }
   .empty .display{
-    color:var(--pine-dark);
-    font-size:19px;
-    margin-bottom:6px;
+    color:var(--ink);
+    font-size:20px;
+    margin-bottom:8px;
   }
   .modal-bg{
     position:fixed; inset:0;
-    background:rgba(38,51,43,0.35);
+    background:rgba(25,31,40,0.4);
     display:flex; align-items:flex-end;
     z-index:50;
   }
   .modal{
-    background:var(--paper);
+    background:#fff;
     width:100%;
-    border-radius:20px 20px 0 0;
-    padding:22px 20px 30px;
+    border-radius:26px 26px 0 0;
+    padding:26px 22px 34px;
     max-height:88vh;
     overflow-y:auto;
   }
-  .modal h3{margin:0 0 4px;}
+  .modal h3{margin:0 0 4px; font-size:19px;}
   .modal-close{
     float:right;
     background:none;border:none;
@@ -283,22 +286,23 @@
   }
   .loading{
     text-align:center;
-    padding:60px 20px;
+    padding:70px 20px;
     color:var(--muted);
     font-size:14px;
+    font-weight:500;
   }
   .toast{
     position:fixed;
-    bottom:20px; left:50%;
+    bottom:24px; left:50%;
     transform:translateX(-50%);
-    background:var(--pine-dark);
+    background:var(--ink);
     color:#fff;
-    padding:11px 18px;
+    padding:12px 20px;
     border-radius:999px;
     font-size:13px;
-    font-weight:600;
+    font-weight:700;
     z-index:100;
-    box-shadow:0 4px 14px rgba(0,0,0,0.2);
+    box-shadow:0 8px 20px rgba(0,0,0,0.18);
   }
   .delete-x{
     background:none;border:none;color:var(--muted);
@@ -306,11 +310,24 @@
   }
   .record-item{
     display:flex; align-items:center; justify-content:space-between;
-    padding:10px 4px;
+    padding:11px 4px;
     border-bottom:1px solid var(--line);
     font-size:13.5px;
+    font-weight:500;
   }
   .record-item:last-child{border-bottom:none;}
+  .confirm-modal{
+    background:#fff;
+    border-radius:20px;
+    padding:26px 22px;
+    max-width:320px;
+    width:88%;
+    text-align:center;
+  }
+  .confirm-modal h3{font-size:17px; margin:0 0 8px;}
+  .confirm-modal p{font-size:13.5px; color:var(--muted); margin:0 0 20px; line-height:1.5;}
+  .confirm-btns{display:flex; gap:10px;}
+  .confirm-btns button{flex:1;}
 </style>
 </head>
 <body>
@@ -487,11 +504,14 @@ function renderList(){
     const metaText = last ? `최근 ${fmtDate(last.date)} · ${last.height?last.height+'cm ':''}${last.weight?last.weight+'kg':''}` : '기록 없음';
     return `
       <div class="member-row" data-open="${m.id}">
-        <div>
-          <div class="name">${m.name} <span class="tag ${m.type}">${m.type==='child'?'자녀':'부모'}</span></div>
-          <div class="meta">${metaText}</div>
+        <div class="left">
+          <div class="avatar">${m.emoji||(m.type==='child'?'🧒':'🙂')}</div>
+          <div>
+            <div class="name">${m.name}</div>
+            <div class="meta">${metaText}</div>
+          </div>
         </div>
-        <div style="font-size:20px;color:var(--muted);">›</div>
+        <div class="chev">›</div>
       </div>`;
   };
 
@@ -502,10 +522,10 @@ function renderList(){
         <div class="display">가족 구성원을 추가해보세요</div>
         <div>이름과 생년월일만 입력하면 바로 기록을 시작할 수 있어요.</div>
       </div>` : `
-      ${children.length>0 ? `<h3 style="margin:6px 0 10px;font-size:14px;color:var(--muted);">자녀</h3>${children.map(renderRow).join('')}`:''}
-      ${parents.length>0 ? `<h3 style="margin:18px 0 10px;font-size:14px;color:var(--muted);">부모</h3>${parents.map(renderRow).join('')}`:''}
+      ${children.length>0 ? `<div class="section-label">자녀</div><div class="card" style="padding:6px 20px;">${children.map(renderRow).join('')}</div>`:''}
+      ${parents.length>0 ? `<div class="section-label">부모</div><div class="card" style="padding:6px 20px;">${parents.map(renderRow).join('')}</div>`:''}
     `}
-    <div style="margin-top:20px;">
+    <div style="margin-top:8px;">
       <button class="primary" id="btn-add-member">+ 가족 구성원 추가</button>
     </div>
   `;
@@ -581,9 +601,8 @@ function renderDetail(memberId){
     `;
   }
 
-  const doorframeMarks = recs.slice().reverse().slice(0,8).map(r=>`
+  const marksList = recs.slice().reverse().slice(0,8).map(r=>`
     <div class="mark">
-      <div class="stub"></div>
       <span class="label">${r.height?r.height+' cm':''}${r.weight?' · '+r.weight+' kg':''}</span>
       <span class="date">${fmtDate(r.date)}</span>
     </div>
@@ -600,29 +619,35 @@ function renderDetail(memberId){
     <button class="back-btn" id="btn-back">← 목록으로</button>
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-        <div>
-          <h2 style="margin:0 0 4px;">${m.name}</h2>
-          <div class="subtitle">${m.type==='child'?'자녀':'부모'} ${m.birthDate?`· ${m.birthDate}`:''} ${m.gender==='male'?'· 남':m.gender==='female'?'· 여':''}</div>
+        <div style="display:flex;align-items:center;gap:14px;">
+          <div class="avatar lg">${m.emoji||(m.type==='child'?'🧒':'🙂')}</div>
+          <div>
+            <h2 style="margin:0 0 4px;">${m.name}</h2>
+            <div class="subtitle">${m.type==='child'?'자녀':'부모'} ${m.birthDate?`· ${m.birthDate}`:''} ${m.gender==='male'?'· 남':m.gender==='female'?'· 여':''}</div>
+          </div>
         </div>
-        <button class="delete-x" id="btn-del-member" title="구성원 삭제">✕</button>
       </div>
-      <button class="ghost" id="btn-edit-member" style="margin-top:10px;">프로필 수정</button>
+      <button class="ghost" id="btn-edit-member" style="margin-top:14px;">프로필 수정</button>
 
       ${isChild ? childStatBlock : weightGoalBlock}
 
       ${recs.length>1 ? `<div class="chart-box"><canvas id="growthChart" height="160"></canvas></div>` : ''}
 
-      <div class="doorframe">${doorframeMarks}</div>
+      <div class="marks-list">${marksList}</div>
 
-      <button class="primary" id="btn-add-record" style="margin-top:6px;">+ 오늘 기록 추가</button>
+      <button class="primary" id="btn-add-record" style="margin-top:16px;">+ 오늘 기록 추가</button>
     </div>
 
     <div class="card">
       <h3 style="margin:0 0 10px;font-size:15px;">전체 기록</h3>
       ${recordListItems}
     </div>
+
+    <button class="danger" id="btn-del-member">프로필 삭제</button>
   `;
 }
+
+const EMOJI_SET = ['🧒','👧','👦','👶','🙂','👩','👨','👩‍🦰','👨‍🦱','😊','🐻','🐰','🐥','⭐'];
 
 function renderModals(){
   if(currentView.modal==='addMember'){
@@ -639,6 +664,10 @@ function renderModals(){
           </select>
           <label>이름</label>
           <input id="f-name" placeholder="예: 하은" />
+          <label>프로필 이모지</label>
+          <div class="emoji-grid" id="f-emoji-grid">
+            ${EMOJI_SET.map((e,i)=>`<button type="button" data-emoji="${e}" class="${i===0?'selected':''}">${e}</button>`).join('')}
+          </div>
           <div id="child-fields">
             <label>생년월일</label>
             <input id="f-birth" type="date" />
@@ -697,6 +726,10 @@ function renderModals(){
           <div class="subtitle">${m.type==='child'?'자녀':'부모'} 정보 수정</div>
           <label>이름</label>
           <input id="e-name" value="${m.name}" />
+          <label>프로필 이모지</label>
+          <div class="emoji-grid" id="e-emoji-grid">
+            ${EMOJI_SET.map(e=>`<button type="button" data-emoji="${e}" class="${(m.emoji||EMOJI_SET[0])===e?'selected':''}">${e}</button>`).join('')}
+          </div>
           ${isChild ? `
           <label>생년월일</label>
           <input id="e-birth" type="date" value="${m.birthDate||''}" />
@@ -715,6 +748,20 @@ function renderModals(){
         </div>
       </div>`;
   }
+  if(currentView.modal==='confirmDeleteMember'){
+    const m = members.find(x=>x.id===currentView.memberId);
+    return `
+      <div class="modal-bg" id="modal-bg" style="align-items:center;justify-content:center;">
+        <div class="confirm-modal">
+          <h3>${m?m.name:''}님을 삭제할까요?</h3>
+          <p>기록된 키·몸무게 데이터도 함께 사라지고<br>되돌릴 수 없어요.</p>
+          <div class="confirm-btns">
+            <button class="ghost" id="cancel-delete-member">취소</button>
+            <button class="danger" id="confirm-delete-member">삭제하기</button>
+          </div>
+        </div>
+      </div>`;
+  }
   return '';
 }
 
@@ -729,8 +776,8 @@ function drawChart(m){
   let datasets, scales;
   if(isChild){
     datasets = [
-      {label:'키(cm)', data:recs.map(r=>r.height||null), borderColor:'#3f6b53', backgroundColor:'#3f6b53', tension:.3, yAxisID:'y'},
-      {label:'몸무게(kg)', data:recs.map(r=>r.weight||null), borderColor:'#d97a5c', backgroundColor:'#d97a5c', tension:.3, yAxisID:'y1'}
+      {label:'키(cm)', data:recs.map(r=>r.height||null), borderColor:'#16a34a', backgroundColor:'#16a34a', tension:.3, yAxisID:'y'},
+      {label:'몸무게(kg)', data:recs.map(r=>r.weight||null), borderColor:'#f97316', backgroundColor:'#f97316', tension:.3, yAxisID:'y1'}
     ];
     scales = {
       y:{position:'left', title:{display:true,text:'cm'}},
@@ -738,14 +785,14 @@ function drawChart(m){
     };
   } else {
     datasets = [
-      {label:'몸무게(kg)', data:recs.map(r=>r.weight||null), borderColor:'#d97a5c', backgroundColor:'#d97a5c', tension:.3, yAxisID:'y'}
+      {label:'몸무게(kg)', data:recs.map(r=>r.weight||null), borderColor:'#f97316', backgroundColor:'#f97316', tension:.3, yAxisID:'y'}
     ];
     scales = { y:{position:'left', title:{display:true,text:'kg'}} };
     if(m.targetWeight){
       datasets.push({
         label:'목표 체중',
         data: recs.map(()=>m.targetWeight),
-        borderColor:'#5b7fa6',
+        borderColor:'#16a34a',
         borderDash:[6,4],
         pointRadius:0,
         yAxisID:'y'
@@ -786,12 +833,20 @@ function bindEvents(){
   const modalBg = document.getElementById('modal-bg');
   if(modalBg) modalBg.onclick = (e)=>{ if(e.target.id==='modal-bg'){ delete currentView.modal; render(); } };
 
+  document.querySelectorAll('#f-emoji-grid button, #e-emoji-grid button').forEach(btn=>{
+    btn.onclick = ()=>{
+      btn.parentElement.querySelectorAll('button').forEach(b=>b.classList.remove('selected'));
+      btn.classList.add('selected');
+    };
+  });
+
   const saveMemberBtn = document.getElementById('save-member');
   if(saveMemberBtn) saveMemberBtn.onclick = async ()=>{
     const type = document.getElementById('f-type').value;
     const name = document.getElementById('f-name').value.trim();
     if(!name){ showToast('이름을 입력해주세요'); return; }
-    const data = { type, name };
+    const selectedEmojiBtn = document.querySelector('#f-emoji-grid button.selected');
+    const data = { type, name, emoji: selectedEmojiBtn ? selectedEmojiBtn.dataset.emoji : EMOJI_SET[0] };
     if(type==='child'){
       data.birthDate = document.getElementById('f-birth').value || null;
       data.gender = document.getElementById('f-gender').value;
@@ -842,7 +897,8 @@ function bindEvents(){
     const m = members.find(x=>x.id===currentView.memberId);
     const name = document.getElementById('e-name').value.trim();
     if(!name){ showToast('이름을 입력해주세요'); return; }
-    const data = { name };
+    const selectedEmojiBtn = document.querySelector('#e-emoji-grid button.selected');
+    const data = { name, emoji: selectedEmojiBtn ? selectedEmojiBtn.dataset.emoji : (m.emoji||EMOJI_SET[0]) };
     if(m.type==='child'){
       data.birthDate = document.getElementById('e-birth').value || null;
       data.gender = document.getElementById('e-gender').value;
@@ -858,12 +914,20 @@ function bindEvents(){
   };
 
   const delMemberBtn = document.getElementById('btn-del-member');
-  if(delMemberBtn) delMemberBtn.onclick = async ()=>{
-    if(confirm(`${members.find(m=>m.id===currentView.memberId)?.name}님을 삭제할까요? 모든 기록도 함께 사라져요.`)){
-      await removeMember(currentView.memberId);
-      currentView = {name:'list'};
-      showToast('삭제했어요');
-    }
+  if(delMemberBtn) delMemberBtn.onclick = ()=>{
+    currentView.modal = 'confirmDeleteMember';
+    render();
+  };
+
+  const cancelDeleteBtn = document.getElementById('cancel-delete-member');
+  if(cancelDeleteBtn) cancelDeleteBtn.onclick = ()=>{ delete currentView.modal; render(); };
+
+  const confirmDeleteBtn = document.getElementById('confirm-delete-member');
+  if(confirmDeleteBtn) confirmDeleteBtn.onclick = async ()=>{
+    const name = members.find(m=>m.id===currentView.memberId)?.name;
+    await removeMember(currentView.memberId);
+    currentView = {name:'list'};
+    showToast(`${name}님을 삭제했어요`);
   };
 }
 
