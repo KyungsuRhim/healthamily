@@ -754,6 +754,9 @@ function renderDetail(memberId){
           <div>
             <h2 style="margin:0 0 4px;">${m.name}</h2>
             <div class="subtitle">${m.type==='child'?'자녀':'부모'} ${m.birthDate?`· ${m.birthDate}`:''} ${m.gender==='male'?'· 남':m.gender==='female'?'· 여':''}</div>
+            <div class="subtitle" style="margin-top:6px;">
+              ${spiceEmoji(m.spiceLevel ?? 1)}${(m.avoidIngredients&&m.avoidIngredients.length>0) ? ` · 기피: ${m.avoidIngredients.map(a=>`${ALLERGEN_TAGS[a]||''}${a}`).join(' ')}` : ''}
+            </div>
           </div>
         </div>
       </div>
