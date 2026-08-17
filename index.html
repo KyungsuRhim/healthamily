@@ -602,6 +602,7 @@ function renderList(){
   return `
     ${renderHeader()}
     ${renderFamilySummary()}
+    <button class="ghost" id="btn-meal-picker" style="width:100%;margin-bottom:20px;">🍽️ 오늘 저녁 뭐 먹지?</button>
     ${members.length===0 ? `
       <div class="empty">
         <div class="display">가족 구성원을 추가해보세요</div>
@@ -837,6 +838,109 @@ function calcCalories(type, minutes, weightKg){
 
 const EMOJI_SET = ['🧒','👧','👦','👶','🙂','👩','👨','👩‍🦰','👨‍🦱','😊','🐻','🐰','🐥','⭐'];
 
+/* ---------- 식단 추천 데이터 ---------- */
+const ALLERGEN_TAGS = {
+  '계란':'🥚','우유':'🥛','밀':'🌾','갑각류':'🦐','땅콩':'🥜',
+  '견과류':'🌰','돼지고기':'🐷','생선':'🐟','대두':'🫘'
+};
+const GROWTH_TAGS = { '키성장':'📏','근성장':'💪','균형식':'⚖️','체중감량':'🔥' };
+
+function spiceEmoji(level){
+  if(!level) return '안 매움';
+  return '🌶️'.repeat(level);
+}
+
+const CHILD_MEALS = [
+  {name:'계란볶음밥', emoji:'🍳', tags:['균형식'], spice:0, allergens:['계란']},
+  {name:'소고기미역국', emoji:'🍲', tags:['키성장'], spice:0, allergens:[]},
+  {name:'닭가슴살덮밥', emoji:'🍗', tags:['근성장'], spice:0, allergens:[]},
+  {name:'두부계란찜', emoji:'🍳', tags:['균형식'], spice:0, allergens:['계란','대두']},
+  {name:'멸치볶음', emoji:'🐟', tags:['키성장'], spice:0, allergens:['생선']},
+  {name:'치즈오믈렛', emoji:'🧀', tags:['균형식'], spice:0, allergens:['계란','우유']},
+  {name:'감자수프', emoji:'🥔', tags:['균형식'], spice:0, allergens:['우유']},
+  {name:'잔치국수', emoji:'🍜', tags:['균형식'], spice:0, allergens:['밀','계란']},
+  {name:'소고기전', emoji:'🥩', tags:['근성장'], spice:0, allergens:['계란','밀']},
+  {name:'순한 삼계탕', emoji:'🍗', tags:['키성장'], spice:0, allergens:[]},
+  {name:'시금치나물비빔밥', emoji:'🥬', tags:['균형식'], spice:0, allergens:[]},
+  {name:'콩나물국밥', emoji:'🍚', tags:['균형식'], spice:1, allergens:['대두']},
+  {name:'새우볶음밥', emoji:'🍤', tags:['균형식'], spice:0, allergens:['갑각류','계란']},
+  {name:'두부조림', emoji:'🍲', tags:['근성장'], spice:0, allergens:['대두']},
+  {name:'순한 김치볶음밥', emoji:'🍚', tags:['균형식'], spice:1, allergens:[]},
+  {name:'치킨너겟과 야채스틱', emoji:'🍗', tags:['근성장'], spice:0, allergens:['밀','계란']},
+  {name:'미니함박스테이크', emoji:'🍔', tags:['근성장'], spice:0, allergens:['계란','밀','우유']},
+  {name:'브로콜리치즈그라탕', emoji:'🥦', tags:['키성장'], spice:0, allergens:['우유','밀']},
+  {name:'닭죽', emoji:'🍚', tags:['균형식'], spice:0, allergens:[]},
+  {name:'소불고기덮밥', emoji:'🍚', tags:['근성장'], spice:0, allergens:[]},
+  {name:'연두부달걀국', emoji:'🍲', tags:['균형식'], spice:0, allergens:['계란','대두']},
+  {name:'고구마치즈볼', emoji:'🍠', tags:['균형식'], spice:0, allergens:['우유','밀']},
+  {name:'오므라이스', emoji:'🍳', tags:['균형식'], spice:0, allergens:['계란']},
+  {name:'참치마요덮밥', emoji:'🐟', tags:['근성장'], spice:0, allergens:['생선','계란']},
+  {name:'애호박전', emoji:'🥒', tags:['균형식'], spice:0, allergens:['계란','밀']},
+  {name:'순한 갈비찜', emoji:'🍖', tags:['근성장'], spice:0, allergens:['밀']},
+  {name:'순한 크림파스타', emoji:'🍝', tags:['균형식'], spice:0, allergens:['밀','우유']},
+  {name:'닭가슴살야채꼬치', emoji:'🍢', tags:['근성장'], spice:0, allergens:[]},
+  {name:'미역줄기볶음밥', emoji:'🍚', tags:['키성장'], spice:0, allergens:[]},
+  {name:'두유팬케이크', emoji:'🥞', tags:['균형식'], spice:0, allergens:['밀','대두']},
+  {name:'소고기야채죽', emoji:'🍚', tags:['키성장'], spice:0, allergens:[]},
+  {name:'순한 떡볶이', emoji:'🍢', tags:['균형식'], spice:1, allergens:['밀']}
+];
+
+const PARENT_MEALS = [
+  {name:'닭가슴살 샐러드', emoji:'🥗', tags:['체중감량'], spice:0, allergens:[]},
+  {name:'소고기 스테이크와 야채구이', emoji:'🥩', tags:['근성장'], spice:0, allergens:[]},
+  {name:'두부김치', emoji:'🍲', tags:['체중감량'], spice:2, allergens:['대두']},
+  {name:'연어스테이크', emoji:'🐟', tags:['근성장'], spice:0, allergens:['생선']},
+  {name:'오징어볶음', emoji:'🦑', tags:['균형식'], spice:2, allergens:[]},
+  {name:'매운 닭갈비', emoji:'🌶️', tags:['근성장'], spice:3, allergens:[]},
+  {name:'순두부찌개', emoji:'🍲', tags:['체중감량'], spice:2, allergens:['대두']},
+  {name:'삼겹살 구이', emoji:'🥓', tags:['근성장'], spice:0, allergens:['돼지고기']},
+  {name:'그릭요거트 견과 볼', emoji:'🥣', tags:['체중감량'], spice:0, allergens:['우유','견과류']},
+  {name:'새우 볶음', emoji:'🍤', tags:['근성장'], spice:1, allergens:['갑각류']},
+  {name:'계란찜', emoji:'🍳', tags:['균형식'], spice:0, allergens:['계란']},
+  {name:'매운 낙지볶음', emoji:'🌶️', tags:['근성장'], spice:3, allergens:[]},
+  {name:'훈제오리샐러드', emoji:'🥗', tags:['체중감량'], spice:0, allergens:[]},
+  {name:'닭가슴살 스테이크', emoji:'🍗', tags:['근성장'], spice:0, allergens:[]},
+  {name:'저염 된장찌개', emoji:'🍲', tags:['균형식'], spice:1, allergens:['대두']},
+  {name:'두부스테이크', emoji:'🧈', tags:['체중감량'], spice:0, allergens:['대두']},
+  {name:'매운 곱창', emoji:'🌶️', tags:['근성장'], spice:3, allergens:[]},
+  {name:'소고기 야채볶음', emoji:'🥩', tags:['근성장'], spice:1, allergens:[]},
+  {name:'참치 샐러드', emoji:'🐟', tags:['체중감량'], spice:0, allergens:['생선','계란']},
+  {name:'청국장', emoji:'🍲', tags:['균형식'], spice:1, allergens:['대두']},
+  {name:'매운 낙곱새', emoji:'🌶️', tags:['근성장'], spice:3, allergens:['갑각류']},
+  {name:'저탄수 김밥', emoji:'🍙', tags:['체중감량'], spice:0, allergens:[]},
+  {name:'닭한마리', emoji:'🍲', tags:['균형식'], spice:0, allergens:[]},
+  {name:'오리불고기', emoji:'🦆', tags:['근성장'], spice:2, allergens:[]},
+  {name:'콩나물불고기', emoji:'🍲', tags:['근성장'], spice:1, allergens:['대두']},
+  {name:'매운 아귀찜', emoji:'🌶️', tags:['근성장'], spice:3, allergens:[]},
+  {name:'치킨스테이크 샐러드', emoji:'🍗', tags:['체중감량'], spice:0, allergens:[]},
+  {name:'두부면 잡채', emoji:'🍜', tags:['체중감량'], spice:1, allergens:['대두']},
+  {name:'매운 제육볶음', emoji:'🌶️', tags:['근성장'], spice:3, allergens:['돼지고기']},
+  {name:'견과류 오트밀', emoji:'🥣', tags:['체중감량'], spice:0, allergens:['견과류','우유']},
+  {name:'훈제삼겹 샐러드', emoji:'🥗', tags:['체중감량'], spice:0, allergens:['돼지고기']},
+  {name:'매운 낙지비빔밥', emoji:'🌶️', tags:['근성장'], spice:3, allergens:[]}
+];
+
+function renderFoodPrefFields(prefix, m){
+  const spice = m ? (m.spiceLevel ?? 1) : 1;
+  const avoid = m ? (m.avoidIngredients || []) : [];
+  return `
+    <label>매운맛 선호도</label>
+    <select id="${prefix}-spice">
+      <option value="0" ${spice==0?'selected':''}>안 매움</option>
+      <option value="1" ${spice==1?'selected':''}>🌶️ 약간</option>
+      <option value="2" ${spice==2?'selected':''}>🌶️🌶️ 보통</option>
+      <option value="3" ${spice==3?'selected':''}>🌶️🌶️🌶️ 많이</option>
+    </select>
+    <label>기피 재료 (선택)</label>
+    <div class="emoji-grid" id="${prefix}-avoid-grid" style="grid-template-columns:repeat(3,1fr);">
+      ${Object.keys(ALLERGEN_TAGS).map(k=>`
+        <button type="button" data-ingredient="${k}" class="${avoid.includes(k)?'selected':''}" style="font-size:13px;display:flex;flex-direction:column;gap:2px;">
+          <span style="font-size:18px;">${ALLERGEN_TAGS[k]}</span>${k}
+        </button>`).join('')}
+    </div>
+  `;
+}
+
 function renderModals(){
   if(currentView.modal==='addMember'){
     return `
@@ -871,6 +975,7 @@ function renderModals(){
             <label>목표 체중 (kg, 선택)</label>
             <input id="f-target" type="number" step="0.1" placeholder="예: 68" />
           </div>
+          ${renderFoodPrefFields('f', null)}
           <button class="primary" id="save-member" style="margin-top:18px;">추가하기</button>
         </div>
       </div>`;
@@ -981,6 +1086,7 @@ function renderModals(){
           <label>목표 체중 (kg, 선택)</label>
           <input id="e-target" type="number" step="0.1" value="${m.targetWeight||''}" placeholder="예: 68" />
           `}
+          ${renderFoodPrefFields('e', m)}
           <button class="primary" id="save-edit-member" style="margin-top:18px;">저장하기</button>
         </div>
       </div>`;
@@ -996,6 +1102,51 @@ function renderModals(){
             <button class="ghost" id="cancel-delete-member">취소</button>
             <button class="danger" id="confirm-delete-member">삭제하기</button>
           </div>
+        </div>
+      </div>`;
+  }
+  if(currentView.modal==='mealPicker'){
+    return `
+      <div class="modal-bg" id="modal-bg">
+        <div class="modal">
+          <button class="modal-close" id="modal-close">✕</button>
+          <h3>오늘 저녁 뭐 먹지?</h3>
+          <div class="subtitle">오늘 저녁 같이 먹을 가족을 골라주세요.</div>
+          <div style="margin-top:14px;">
+            ${members.map(m=>`
+              <label style="display:flex;align-items:center;gap:10px;font-weight:500;font-size:14px;color:var(--ink);margin:10px 0;">
+                <input type="checkbox" data-meal-member="${m.id}" style="width:auto;" checked />
+                ${m.emoji||'🙂'} ${m.name}
+              </label>
+            `).join('')}
+          </div>
+          <button class="primary" id="btn-get-meal" style="margin-top:16px;">메뉴 추천받기</button>
+        </div>
+      </div>`;
+  }
+  if(currentView.modal==='mealResult'){
+    const result = currentView.mealResult || {};
+    const renderMealCard = (meal)=>`
+      <div class="record-item">
+        <span>${meal.emoji} ${meal.name} <span style="color:var(--muted);">· ${meal.tags.map(t=>`${GROWTH_TAGS[t]||''}${t}`).join(' ')} · ${spiceEmoji(meal.spice)}${meal.allergens.length>0?` · ${meal.allergens.map(a=>ALLERGEN_TAGS[a]).join(' ')}`:''}</span></span>
+      </div>`;
+    return `
+      <div class="modal-bg" id="modal-bg">
+        <div class="modal">
+          <button class="modal-close" id="modal-close">✕</button>
+          <h3>오늘의 추천 메뉴</h3>
+          ${result.childMeals && result.childMeals.length>0 ? `
+            <div class="section-label">자녀 메뉴</div>
+            ${result.childMeals.map(renderMealCard).join('')}
+          ` : ''}
+          ${result.parentMeals && result.parentMeals.length>0 ? `
+            <div class="section-label">부모 메뉴</div>
+            ${result.parentMeals.map(renderMealCard).join('')}
+          ` : ''}
+          ${(!result.childMeals || result.childMeals.length===0) && (!result.parentMeals || result.parentMeals.length===0) ? `
+            <p style="color:var(--muted);font-size:13.5px;">조건에 맞는 메뉴를 찾지 못했어요. 기피 재료를 줄이거나 매운맛 선호도를 조정해보세요.</p>
+          ` : ''}
+          <button class="ghost" id="btn-meal-again" style="width:100%;margin-top:14px;">다시 추천받기</button>
         </div>
       </div>`;
   }
@@ -1049,6 +1200,41 @@ function drawChart(m){
   });
 }
 
+function pickRandom(arr, n){
+  const copy = arr.slice();
+  const picked = [];
+  while(copy.length>0 && picked.length<n){
+    const idx = Math.floor(Math.random()*copy.length);
+    picked.push(copy.splice(idx,1)[0]);
+  }
+  return picked;
+}
+
+function filterMeals(pool, maxSpice, avoidSet){
+  return pool.filter(meal=>
+    meal.spice <= maxSpice &&
+    !meal.allergens.some(a=>avoidSet.has(a))
+  );
+}
+
+function getMealRecommendation(selectedMembers){
+  const children = selectedMembers.filter(m=>m.type==='child');
+  const parents = selectedMembers.filter(m=>m.type==='parent');
+
+  const result = {};
+  if(children.length>0){
+    const maxSpice = Math.min(...children.map(m=>m.spiceLevel ?? 1));
+    const avoidSet = new Set(children.flatMap(m=>m.avoidIngredients||[]));
+    result.childMeals = pickRandom(filterMeals(CHILD_MEALS, maxSpice, avoidSet), 3);
+  }
+  if(parents.length>0){
+    const maxSpice = Math.min(...parents.map(m=>m.spiceLevel ?? 1));
+    const avoidSet = new Set(parents.flatMap(m=>m.avoidIngredients||[]));
+    result.parentMeals = pickRandom(filterMeals(PARENT_MEALS, maxSpice, avoidSet), 3);
+  }
+  return result;
+}
+
 function bindEvents(){
   document.querySelectorAll('[data-open]').forEach(elm=>{
     elm.onclick = ()=>{ currentView = {name:'detail', memberId:elm.dataset.open}; render(); };
@@ -1077,6 +1263,10 @@ function bindEvents(){
     };
   });
 
+  document.querySelectorAll('#f-avoid-grid button, #e-avoid-grid button').forEach(btn=>{
+    btn.onclick = ()=>{ btn.classList.toggle('selected'); };
+  });
+
   const saveMemberBtn = document.getElementById('save-member');
   if(saveMemberBtn) saveMemberBtn.onclick = async ()=>{
     const type = document.getElementById('f-type').value;
@@ -1093,6 +1283,8 @@ function bindEvents(){
       data.height = h ? parseFloat(h) : null;
       data.targetWeight = t ? parseFloat(t) : null;
     }
+    data.spiceLevel = parseInt(document.getElementById('f-spice').value);
+    data.avoidIngredients = Array.from(document.querySelectorAll('#f-avoid-grid button.selected')).map(b=>b.dataset.ingredient);
     await addMember(data);
     delete currentView.modal;
     showToast('가족 구성원을 추가했어요');
@@ -1215,9 +1407,31 @@ function bindEvents(){
       data.height = h ? parseFloat(h) : null;
       data.targetWeight = t ? parseFloat(t) : null;
     }
+    data.spiceLevel = parseInt(document.getElementById('e-spice').value);
+    data.avoidIngredients = Array.from(document.querySelectorAll('#e-avoid-grid button.selected')).map(b=>b.dataset.ingredient);
     await updateMember(currentView.memberId, data);
     delete currentView.modal;
     showToast('프로필을 수정했어요');
+  };
+
+  const mealPickerBtn = document.getElementById('btn-meal-picker');
+  if(mealPickerBtn) mealPickerBtn.onclick = ()=>{ currentView.modal='mealPicker'; render(); };
+
+  const getMealBtn = document.getElementById('btn-get-meal');
+  if(getMealBtn) getMealBtn.onclick = ()=>{
+    const selectedIds = Array.from(document.querySelectorAll('[data-meal-member]:checked')).map(el=>el.dataset.mealMember);
+    currentView.mealSelectedIds = selectedIds;
+    const selectedMembers = members.filter(m=>selectedIds.includes(m.id));
+    currentView.mealResult = getMealRecommendation(selectedMembers);
+    currentView.modal = 'mealResult';
+    render();
+  };
+
+  const mealAgainBtn = document.getElementById('btn-meal-again');
+  if(mealAgainBtn) mealAgainBtn.onclick = ()=>{
+    const selectedMembers = members.filter(m=>(currentView.mealSelectedIds||[]).includes(m.id));
+    currentView.mealResult = getMealRecommendation(selectedMembers);
+    render();
   };
 
   const delMemberBtn = document.getElementById('btn-del-member');
