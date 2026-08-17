@@ -559,6 +559,7 @@ function renderFamilySummary(){
       const wt = workouts[m.id]||[];
       const recentWorkouts = wt.filter(w=>new Date(w.date) >= cutoff);
       const totalMin = recentWorkouts.reduce((s,w)=>s+(w.minutes||0),0);
+      const totalCal = recentWorkouts.reduce((s,w)=>s+(w.calories||0),0);
       let weightPart = '';
       if(m.targetWeight && last.weight){
         const remaining = (last.weight - m.targetWeight).toFixed(1);
@@ -566,7 +567,7 @@ function renderFamilySummary(){
       } else if(last.weight){
         weightPart = `${last.weight}kg`;
       }
-      lines.push(`<div class="record-item"><span>${m.emoji||'🙂'} ${m.name}</span><span style="color:var(--accent);font-weight:700;">${weightPart}${recentWorkouts.length>0?` · 운동 ${recentWorkouts.length}회 (${totalMin}분)`:''}</span></div>`);
+      lines.push(`<div class="record-item"><span>${m.emoji||'🙂'} ${m.name}</span><span style="color:var(--accent);font-weight:700;">${weightPart}${recentWorkouts.length>0?` · 운동 ${recentWorkouts.length}회(${totalMin}분${totalCal>0?`,${totalCal}kcal`:''})`:''}</span></div>`);
     }
   });
 
@@ -702,17 +703,20 @@ function renderDetail(memberId){
   let milestoneBlock = '';
   if(isChild){
     const ms = (milestones[m.id]||[]).slice().reverse();
-    const items = ms.map(item=>`
+    const items = ms.map(item=>{
+      const emoji = MILESTONE_TYPES[item.type] || '⭐';
+      const age = ageYM(m.birthDate, item.date);
+      return `
       <div class="record-item">
-        <span>${fmtDate(item.date)} · ${item.title}</span>
+        <span>${emoji} ${item.type}${item.note?` · ${item.note}`:''} <span style="color:var(--muted);">· ${fmtDate(item.date)}${age?` · ${age}`:''}</span></span>
         <button class="delete-x" data-del-milestone="${m.id}|${item.id}">✕</button>
-      </div>
-    `).join('') || '<div style="color:var(--muted);font-size:13px;">아직 기록된 마일스톤이 없어요</div>';
+      </div>`;
+    }).join('') || '<div style="color:var(--muted);font-size:13px;">아직 기록된 성장기록이 없어요</div>';
     milestoneBlock = `
       <div class="card">
-        <h3 style="margin:0 0 10px;font-size:15px;">성장 마일스톤</h3>
+        <h3 style="margin:0 0 10px;font-size:15px;">우리 아이 성장기록</h3>
         ${items}
-        <button class="ghost" id="btn-add-milestone" style="margin-top:12px;">+ 마일스톤 추가</button>
+        <button class="ghost" id="btn-add-milestone" style="margin-top:12px;">+ 기록 추가</button>
       </div>`;
   }
 
@@ -720,20 +724,23 @@ function renderDetail(memberId){
   if(!isChild){
     const wt = (workouts[m.id]||[]).slice().reverse();
     const cutoff = new Date(Date.now() - 30*24*60*60*1000);
-    const recentCount = wt.filter(w=>new Date(w.date)>=cutoff).length;
-    const recentMin = wt.filter(w=>new Date(w.date)>=cutoff).reduce((s,w)=>s+(w.minutes||0),0);
+    const recentWt = wt.filter(w=>new Date(w.date)>=cutoff);
+    const recentCount = recentWt.length;
+    const recentMin = recentWt.reduce((s,w)=>s+(w.minutes||0),0);
+    const recentCal = recentWt.reduce((s,w)=>s+(w.calories||0),0);
     const items = wt.map(w=>`
       <div class="record-item">
-        <span>${fmtDate(w.date)} · ${w.type}${w.minutes?` · ${w.minutes}분`:''}</span>
+        <span>${WORKOUT_EMOJI[w.type]||'🏃'} ${w.type}${w.minutes?` · ${w.minutes}분`:''}${w.calories?` · 약 ${w.calories}kcal`:''} <span style="color:var(--muted);">· ${fmtDate(w.date)}</span></span>
         <button class="delete-x" data-del-workout="${m.id}|${w.id}">✕</button>
       </div>
     `).join('') || '<div style="color:var(--muted);font-size:13px;">아직 운동 기록이 없어요</div>';
     workoutBlock = `
       <div class="card">
         <h3 style="margin:0 0 10px;font-size:15px;">운동 기록</h3>
-        ${wt.length>0 ? `<div class="note" style="margin-top:0;margin-bottom:12px;">최근 30일 ${recentCount}회 · ${recentMin}분</div>`:''}
+        ${wt.length>0 ? `<div class="note" style="margin-top:0;margin-bottom:12px;">최근 30일 ${recentCount}회 · ${recentMin}분${recentCal>0?` · 약 ${recentCal}kcal`:''}</div>`:''}
         ${items}
         <button class="ghost" id="btn-add-workout" style="margin-top:12px;">+ 운동 기록 추가</button>
+        <div class="note">※ 칼로리는 최근 체중과 운동 강도(MET) 기준의 대략적인 추정치예요.</div>
       </div>`;
   }
 
@@ -770,6 +777,62 @@ function renderDetail(memberId){
 
     <button class="danger" id="btn-del-member">프로필 삭제</button>
   `;
+}
+
+const MILESTONE_TYPES = {
+  '첫 걸음': '👣',
+  '첫 이빨': '🦷',
+  '이빨 뽑음(발치)': '🦷',
+  '예방접종': '💉',
+  '첫 말': '🗣️',
+  '첫 미소': '😊',
+  '이유식 시작': '🥣',
+  '첫 등원': '🎒',
+  '생일': '🎂',
+  '병원 방문': '🏥'
+};
+
+const WORKOUT_TYPES = {
+  '걷기': 3.5,
+  '러닝(조깅)': 7.0,
+  '웨이트 트레이닝': 5.0,
+  '요가/필라테스': 3.0,
+  '수영': 6.0,
+  '자전거': 6.8,
+  '등산': 6.0,
+  '축구': 7.0,
+  '농구': 6.5,
+  '홈트레이닝(맨몸)': 4.5
+};
+
+const WORKOUT_EMOJI = {
+  '걷기': '🚶',
+  '러닝(조깅)': '🏃',
+  '웨이트 트레이닝': '🏋️',
+  '요가/필라테스': '🧘',
+  '수영': '🏊',
+  '자전거': '🚴',
+  '등산': '⛰️',
+  '축구': '⚽',
+  '농구': '🏀',
+  '홈트레이닝(맨몸)': '🔥'
+};
+
+function ageYM(birthDate, atDate){
+  if(!birthDate) return null;
+  const totalMonths = Math.floor(ageInMonths(birthDate, atDate));
+  if(totalMonths<0) return null;
+  const years = Math.floor(totalMonths/12);
+  const rem = totalMonths%12;
+  return years>0 ? `생후 ${years}년 ${rem}개월` : `생후 ${totalMonths}개월`;
+}
+
+function calcCalories(type, minutes, weightKg){
+  if(!minutes || !weightKg) return null;
+  const met = WORKOUT_TYPES[type];
+  if(!met) return null;
+  const hours = minutes/60;
+  return Math.round(met * weightKg * hours);
 }
 
 const EMOJI_SET = ['🧒','👧','👦','👶','🙂','👩','👨','👩‍🦰','👨‍🦱','😊','🐻','🐰','🐥','⭐'];
@@ -847,12 +910,21 @@ function renderModals(){
       <div class="modal-bg" id="modal-bg">
         <div class="modal">
           <button class="modal-close" id="modal-close">✕</button>
-          <h3>마일스톤 추가</h3>
-          <div class="subtitle">첫 걸음, 첫 이빨, 예방접종 같은 순간을 남겨보세요.</div>
+          <h3>성장기록 추가</h3>
+          <div class="subtitle">첫 걸음, 이빨 뽑음, 예방접종 같은 순간을 남겨보세요.</div>
           <label>날짜</label>
           <input id="ms-date" type="date" value="${new Date().toISOString().slice(0,10)}" />
-          <label>내용</label>
-          <input id="ms-title" placeholder="예: 첫 걸음" />
+          <label>항목</label>
+          <select id="ms-type-select">
+            ${Object.keys(MILESTONE_TYPES).map(t=>`<option value="${t}">${MILESTONE_TYPES[t]} ${t}</option>`).join('')}
+            <option value="__custom">직접 입력</option>
+          </select>
+          <div id="ms-custom-wrap" style="display:none;">
+            <label>항목 이름 (직접 입력)</label>
+            <input id="ms-type-custom" placeholder="예: 첫 어린이집 발표회" />
+          </div>
+          <label>메모 (선택)</label>
+          <input id="ms-note" placeholder="예: 아래 앞니" />
           <button class="primary" id="save-milestone" style="margin-top:18px;">저장하기</button>
         </div>
       </div>`;
@@ -866,7 +938,14 @@ function renderModals(){
           <label>날짜</label>
           <input id="wk-date" type="date" value="${new Date().toISOString().slice(0,10)}" />
           <label>운동 종류</label>
-          <input id="wk-type" placeholder="예: 러닝, 웨이트, 요가" />
+          <select id="wk-type-select">
+            ${Object.keys(WORKOUT_TYPES).map(t=>`<option value="${t}">${t}</option>`).join('')}
+            <option value="__custom">직접 입력</option>
+          </select>
+          <div id="wk-custom-wrap" style="display:none;">
+            <label>운동 이름 (직접 입력)</label>
+            <input id="wk-type-custom" placeholder="예: 클라이밍" />
+          </div>
           <label>시간 (분)</label>
           <input id="wk-minutes" type="number" placeholder="예: 40" />
           <button class="primary" id="save-workout" style="margin-top:18px;">저장하기</button>
@@ -1039,28 +1118,42 @@ function bindEvents(){
     showToast('기록을 저장했어요');
   };
 
+  const msTypeSelect = document.getElementById('ms-type-select');
+  if(msTypeSelect) msTypeSelect.onchange = (e)=>{
+    document.getElementById('ms-custom-wrap').style.display = e.target.value==='__custom' ? 'block' : 'none';
+  };
+
   const addMilestoneBtn = document.getElementById('btn-add-milestone');
   if(addMilestoneBtn) addMilestoneBtn.onclick = ()=>{ currentView.modal='addMilestone'; render(); };
 
   const saveMilestoneBtn = document.getElementById('save-milestone');
   if(saveMilestoneBtn) saveMilestoneBtn.onclick = async ()=>{
     const date = document.getElementById('ms-date').value;
-    const title = document.getElementById('ms-title').value.trim();
-    if(!date || !title){ showToast('날짜와 내용을 입력해주세요'); return; }
-    await addMilestone(currentView.memberId, { date, title });
+    const selectVal = document.getElementById('ms-type-select').value;
+    const type = selectVal==='__custom' ? document.getElementById('ms-type-custom').value.trim() : selectVal;
+    const note = document.getElementById('ms-note').value.trim();
+    if(!date || !type){ showToast('날짜와 항목을 입력해주세요'); return; }
+    const data = { date, type };
+    if(note) data.note = note;
+    await addMilestone(currentView.memberId, data);
     delete currentView.modal;
-    showToast('마일스톤을 저장했어요');
+    showToast('성장기록을 저장했어요');
   };
 
   document.querySelectorAll('[data-del-milestone]').forEach(elm=>{
     elm.onclick = async ()=>{
       const [memberId, msId] = elm.dataset.delMilestone.split('|');
-      if(confirm('이 마일스톤을 삭제할까요?')){
+      if(confirm('이 성장기록을 삭제할까요?')){
         await removeMilestone(memberId, msId);
         showToast('삭제했어요');
       }
     };
   });
+
+  const wkTypeSelect = document.getElementById('wk-type-select');
+  if(wkTypeSelect) wkTypeSelect.onchange = (e)=>{
+    document.getElementById('wk-custom-wrap').style.display = e.target.value==='__custom' ? 'block' : 'none';
+  };
 
   const addWorkoutBtn = document.getElementById('btn-add-workout');
   if(addWorkoutBtn) addWorkoutBtn.onclick = ()=>{ currentView.modal='addWorkout'; render(); };
@@ -1068,11 +1161,16 @@ function bindEvents(){
   const saveWorkoutBtn = document.getElementById('save-workout');
   if(saveWorkoutBtn) saveWorkoutBtn.onclick = async ()=>{
     const date = document.getElementById('wk-date').value;
-    const type = document.getElementById('wk-type').value.trim();
+    const selectVal = document.getElementById('wk-type-select').value;
+    const type = selectVal==='__custom' ? document.getElementById('wk-type-custom').value.trim() : selectVal;
     const minutes = document.getElementById('wk-minutes').value;
     if(!date || !type){ showToast('날짜와 운동 종류를 입력해주세요'); return; }
     const data = { date, type };
     if(minutes) data.minutes = parseInt(minutes);
+    const memberRecs = records[currentView.memberId]||[];
+    const lastWeight = memberRecs.length>0 ? memberRecs[memberRecs.length-1].weight : null;
+    const cal = calcCalories(type, data.minutes, lastWeight);
+    if(cal) data.calories = cal;
     await addWorkout(currentView.memberId, data);
     delete currentView.modal;
     showToast('운동 기록을 저장했어요');
