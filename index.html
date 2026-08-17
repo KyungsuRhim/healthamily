@@ -376,6 +376,19 @@ function estimatePercentile(value, mean, cvPercent){
   return Math.round(p*100);
 }
 
+function calcBMI(weightKg, heightCm){
+  if(!weightKg || !heightCm) return null;
+  const h = heightCm/100;
+  return Math.round((weightKg/(h*h))*10)/10;
+}
+
+function bmiCategory(bmi){
+  if(bmi<18.5) return '저체중';
+  if(bmi<23) return '정상';
+  if(bmi<25) return '과체중';
+  return '비만';
+}
+
 function ageInMonths(birthDate, atDate){
   const b = new Date(birthDate), a = new Date(atDate);
   return (a.getFullYear()-b.getFullYear())*12 + (a.getMonth()-b.getMonth()) + (a.getDate()-b.getDate())/30;
@@ -415,6 +428,10 @@ function listenRecords(memberId){
 
 async function addMember(data){
   await addDoc(membersCol, {...data, createdAt: serverTimestamp()});
+}
+
+async function updateMember(memberId, data){
+  await setDoc(doc(db, 'members', memberId), data, { merge: true });
 }
 
 async function addRecord(memberId, data){
@@ -529,30 +546,38 @@ function renderDetail(memberId){
   const stats = isChild ? computeChildStats(m, recs) : null;
 
   let weightGoalBlock = '';
-  if(!isChild && m.targetWeight && recs.length>0){
+  if(!isChild && recs.length>0){
     const last = recs[recs.length-1];
     const first = recs[0];
-    const lost = (first.weight - last.weight).toFixed(1);
-    const remaining = (last.weight - m.targetWeight).toFixed(1);
-    weightGoalBlock = `
-      <div class="stat-grid">
-        <div class="stat-box"><div class="num">${last.weight}kg</div><div class="lbl">현재 체중</div></div>
-        <div class="stat-box clay"><div class="num">${remaining>0?remaining:0}kg</div><div class="lbl">목표까지 남은 양</div></div>
-        <div class="stat-box"><div class="num">${lost>0?lost:0}kg</div><div class="lbl">지금까지 감량</div></div>
-        <div class="stat-box"><div class="num">${m.targetWeight}kg</div><div class="lbl">목표 체중</div></div>
-      </div>`;
+    const bmiHeight = last.height || m.height;
+    const bmi = calcBMI(last.weight, bmiHeight);
+    const boxes = [];
+    boxes.push(`<div class="stat-box"><div class="num">${last.weight}kg</div><div class="lbl">현재 체중</div></div>`);
+    if(bmi){
+      boxes.push(`<div class="stat-box clay"><div class="num">${bmi}</div><div class="lbl">BMI · ${bmiCategory(bmi)}</div></div>`);
+    }
+    if(m.targetWeight){
+      const lost = (first.weight - last.weight).toFixed(1);
+      const remaining = (last.weight - m.targetWeight).toFixed(1);
+      boxes.push(`<div class="stat-box"><div class="num">${remaining>0?remaining:0}kg</div><div class="lbl">목표까지 남은 양</div></div>`);
+      boxes.push(`<div class="stat-box"><div class="num">${lost>0?lost:0}kg</div><div class="lbl">지금까지 감량</div></div>`);
+    }
+    weightGoalBlock = `<div class="stat-grid">${boxes.join('')}</div>
+      ${!bmiHeight ? `<div class="note">※ 키 정보가 없어 BMI를 계산할 수 없어요. 구성원 정보에서 키를 입력해주세요.</div>` : ''}`;
   }
 
   let childStatBlock = '';
   if(isChild && stats){
+    const bmi = calcBMI(stats.last.weight, stats.last.height);
     childStatBlock = `
       <div class="stat-grid">
         <div class="stat-box"><div class="num">${stats.last.height}cm</div><div class="lbl">현재 키 ${stats.heightDiff!==null?`(직전 대비 +${stats.heightDiff}cm)`:''}</div></div>
         <div class="stat-box clay"><div class="num">${stats.last.weight}kg</div><div class="lbl">현재 체중 ${stats.weightDiff!==null?`(직전 대비 ${stats.weightDiff>0?'+':''}${stats.weightDiff}kg)`:''}</div></div>
+        ${bmi ? `<div class="stat-box"><div class="num">${bmi}</div><div class="lbl">BMI</div></div>`:''}
         ${stats.monthlyRate ? `<div class="stat-box"><div class="num">${stats.monthlyRate}cm</div><div class="lbl">월평균 키 성장 속도</div></div>`:''}
         ${stats.percentileHeight!==null ? `<div class="stat-box"><div class="num">${stats.percentileHeight}%</div><div class="lbl">또래 대비 키 백분위(추정)</div></div>`:''}
       </div>
-      <div class="note">※ 백분위 수치는 질병관리청 공식 성장도표가 아닌 근사 추정값이에요. 정확한 판정이 필요하면 소아과 검진 시 확인해주세요.</div>
+      <div class="note">※ 백분위 수치는 질병관리청 공식 성장도표가 아닌 근사 추정값이에요. 정확한 판정이 필요하면 소아과 검진 시 확인해주세요.${bmi?' 소아 BMI는 성인 기준(저체중/정상/과체중/비만)과 다르게 해석되니 숫자만 참고해주세요.':''}</div>
     `;
   }
 
@@ -581,6 +606,7 @@ function renderDetail(memberId){
         </div>
         <button class="delete-x" id="btn-del-member" title="구성원 삭제">✕</button>
       </div>
+      <button class="ghost" id="btn-edit-member" style="margin-top:10px;">프로필 수정</button>
 
       ${isChild ? childStatBlock : weightGoalBlock}
 
@@ -623,6 +649,8 @@ function renderModals(){
             </select>
           </div>
           <div id="parent-fields" style="display:none;">
+            <label>키 (cm, BMI 계산용)</label>
+            <input id="f-height" type="number" step="0.1" placeholder="예: 172" />
             <label>목표 체중 (kg, 선택)</label>
             <input id="f-target" type="number" step="0.1" placeholder="예: 68" />
           </div>
@@ -631,6 +659,8 @@ function renderModals(){
       </div>`;
   }
   if(currentView.modal==='addRecord'){
+    const m = members.find(x=>x.id===currentView.memberId);
+    const isChild = m && m.type==='child';
     return `
       <div class="modal-bg" id="modal-bg">
         <div class="modal">
@@ -638,6 +668,7 @@ function renderModals(){
           <h3>기록 추가</h3>
           <label>날짜</label>
           <input id="r-date" type="date" value="${new Date().toISOString().slice(0,10)}" />
+          ${isChild ? `
           <div class="row2">
             <div>
               <label>키 (cm)</label>
@@ -647,8 +678,40 @@ function renderModals(){
               <label>몸무게 (kg)</label>
               <input id="r-weight" type="number" step="0.1" placeholder="선택" />
             </div>
-          </div>
+          </div>` : `
+          <label>몸무게 (kg)</label>
+          <input id="r-weight" type="number" step="0.1" placeholder="예: 71.2" />
+          `}
           <button class="primary" id="save-record" style="margin-top:18px;">저장하기</button>
+        </div>
+      </div>`;
+  }
+  if(currentView.modal==='editMember'){
+    const m = members.find(x=>x.id===currentView.memberId);
+    const isChild = m.type==='child';
+    return `
+      <div class="modal-bg" id="modal-bg">
+        <div class="modal">
+          <button class="modal-close" id="modal-close">✕</button>
+          <h3>프로필 수정</h3>
+          <div class="subtitle">${m.type==='child'?'자녀':'부모'} 정보 수정</div>
+          <label>이름</label>
+          <input id="e-name" value="${m.name}" />
+          ${isChild ? `
+          <label>생년월일</label>
+          <input id="e-birth" type="date" value="${m.birthDate||''}" />
+          <label>성별</label>
+          <select id="e-gender">
+            <option value="male" ${m.gender==='male'?'selected':''}>남</option>
+            <option value="female" ${m.gender==='female'?'selected':''}>여</option>
+          </select>
+          ` : `
+          <label>키 (cm, BMI 계산용)</label>
+          <input id="e-height" type="number" step="0.1" value="${m.height||''}" placeholder="예: 172" />
+          <label>목표 체중 (kg, 선택)</label>
+          <input id="e-target" type="number" step="0.1" value="${m.targetWeight||''}" placeholder="예: 68" />
+          `}
+          <button class="primary" id="save-edit-member" style="margin-top:18px;">저장하기</button>
         </div>
       </div>`;
   }
@@ -661,25 +724,43 @@ function drawChart(m){
   const recs = records[m.id]||[];
   if(window._chartInstance) window._chartInstance.destroy();
   const labels = recs.map(r=>fmtDate(r.date));
-  const heights = recs.map(r=>r.height||null);
-  const weights = recs.map(r=>r.weight||null);
+  const isChild = m.type==='child';
+
+  let datasets, scales;
+  if(isChild){
+    datasets = [
+      {label:'키(cm)', data:recs.map(r=>r.height||null), borderColor:'#3f6b53', backgroundColor:'#3f6b53', tension:.3, yAxisID:'y'},
+      {label:'몸무게(kg)', data:recs.map(r=>r.weight||null), borderColor:'#d97a5c', backgroundColor:'#d97a5c', tension:.3, yAxisID:'y1'}
+    ];
+    scales = {
+      y:{position:'left', title:{display:true,text:'cm'}},
+      y1:{position:'right', title:{display:true,text:'kg'}, grid:{drawOnChartArea:false}}
+    };
+  } else {
+    datasets = [
+      {label:'몸무게(kg)', data:recs.map(r=>r.weight||null), borderColor:'#d97a5c', backgroundColor:'#d97a5c', tension:.3, yAxisID:'y'}
+    ];
+    scales = { y:{position:'left', title:{display:true,text:'kg'}} };
+    if(m.targetWeight){
+      datasets.push({
+        label:'목표 체중',
+        data: recs.map(()=>m.targetWeight),
+        borderColor:'#5b7fa6',
+        borderDash:[6,4],
+        pointRadius:0,
+        yAxisID:'y'
+      });
+    }
+  }
+
   window._chartInstance = new Chart(canvas.getContext('2d'), {
     type:'line',
-    data:{
-      labels,
-      datasets:[
-        {label:'키(cm)', data:heights, borderColor:'#3f6b53', backgroundColor:'#3f6b53', tension:.3, yAxisID:'y'},
-        {label:'몸무게(kg)', data:weights, borderColor:'#d97a5c', backgroundColor:'#d97a5c', tension:.3, yAxisID:'y1'}
-      ]
-    },
+    data:{ labels, datasets },
     options:{
       responsive:true,
       interaction:{mode:'index', intersect:false},
       plugins:{legend:{labels:{font:{family:'Work Sans'}}}},
-      scales:{
-        y:{position:'left', title:{display:true,text:'cm'}},
-        y1:{position:'right', title:{display:true,text:'kg'}, grid:{drawOnChartArea:false}}
-      }
+      scales
     }
   });
 }
@@ -715,7 +796,9 @@ function bindEvents(){
       data.birthDate = document.getElementById('f-birth').value || null;
       data.gender = document.getElementById('f-gender').value;
     } else {
+      const h = document.getElementById('f-height').value;
       const t = document.getElementById('f-target').value;
+      data.height = h ? parseFloat(h) : null;
       data.targetWeight = t ? parseFloat(t) : null;
     }
     await addMember(data);
@@ -729,9 +812,10 @@ function bindEvents(){
   const saveRecordBtn = document.getElementById('save-record');
   if(saveRecordBtn) saveRecordBtn.onclick = async ()=>{
     const date = document.getElementById('r-date').value;
-    const height = document.getElementById('r-height').value;
+    const heightEl = document.getElementById('r-height');
+    const height = heightEl ? heightEl.value : '';
     const weight = document.getElementById('r-weight').value;
-    if(!date || (!height && !weight)){ showToast('날짜와 키/몸무게 중 하나는 입력해주세요'); return; }
+    if(!date || (!height && !weight)){ showToast('날짜와 기록할 값을 입력해주세요'); return; }
     const data = { date };
     if(height) data.height = parseFloat(height);
     if(weight) data.weight = parseFloat(weight);
@@ -749,6 +833,29 @@ function bindEvents(){
       }
     };
   });
+
+  const editMemberBtn = document.getElementById('btn-edit-member');
+  if(editMemberBtn) editMemberBtn.onclick = ()=>{ currentView.modal='editMember'; render(); };
+
+  const saveEditBtn = document.getElementById('save-edit-member');
+  if(saveEditBtn) saveEditBtn.onclick = async ()=>{
+    const m = members.find(x=>x.id===currentView.memberId);
+    const name = document.getElementById('e-name').value.trim();
+    if(!name){ showToast('이름을 입력해주세요'); return; }
+    const data = { name };
+    if(m.type==='child'){
+      data.birthDate = document.getElementById('e-birth').value || null;
+      data.gender = document.getElementById('e-gender').value;
+    } else {
+      const h = document.getElementById('e-height').value;
+      const t = document.getElementById('e-target').value;
+      data.height = h ? parseFloat(h) : null;
+      data.targetWeight = t ? parseFloat(t) : null;
+    }
+    await updateMember(currentView.memberId, data);
+    delete currentView.modal;
+    showToast('프로필을 수정했어요');
+  };
 
   const delMemberBtn = document.getElementById('btn-del-member');
   if(delMemberBtn) delMemberBtn.onclick = async ()=>{
