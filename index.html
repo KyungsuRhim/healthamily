@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>Healthamily · 우리 가족 성장 기록</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<style>
+  :root{
+    --paper:#f6f2ea;
+    --ink:#26332b;
+    --pine:#3f6b53;
+    --pine-dark:#2b4a3a;
+    --clay:#d97a5c;
+    --sky:#5b7fa6;
+    --line:#dcd3c1;
+    --card:#ffffff;
+    --muted:#7a7367;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Work Sans', sans-serif;
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3,.display{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    letter-spacing:-0.01em;
+  }
+  .wrap{
+    max-width:720px;
+    margin:0 auto;
+    padding:24px 18px 80px;
+  }
+  header.top{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    border-bottom:2px solid var(--ink);
+    padding-bottom:14px;
+    margin-bottom:22px;
+  }
+  header.top h1{
+    font-size:26px;
+    margin:0;
+    color:var(--pine-dark);
+  }
+  header.top h1 span{color:var(--clay);}
+  .subtitle{
+    font-size:12px;
+    color:var(--muted);
+    margin-top:4px;
+  }
+  nav.tabs{
+    display:flex;
+    gap:8px;
+    margin-bottom:20px;
+    overflow-x:auto;
+    padding-bottom:2px;
+  }
+  nav.tabs button{
+    flex:0 0 auto;
+    background:none;
+    border:1.5px solid var(--line);
+    color:var(--muted);
+    padding:8px 14px;
+    border-radius:999px;
+    font-family:'Work Sans',sans-serif;
+    font-size:13px;
+    font-weight:600;
+    cursor:pointer;
+    transition:all .15s ease;
+  }
+  nav.tabs button.active{
+    background:var(--pine-dark);
+    border-color:var(--pine-dark);
+    color:#fff;
+  }
+  .card{
+    background:var(--card);
+    border:1.5px solid var(--line);
+    border-radius:14px;
+    padding:20px;
+    margin-bottom:16px;
+  }
+  .member-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:14px 16px;
+    border:1.5px solid var(--line);
+    border-radius:12px;
+    margin-bottom:10px;
+    cursor:pointer;
+    background:var(--card);
+    transition:border-color .15s ease;
+  }
+  .member-row:hover{border-color:var(--pine);}
+  .member-row .name{font-weight:600; font-size:16px;}
+  .member-row .meta{font-size:12px; color:var(--muted); margin-top:2px;}
+  .tag{
+    font-size:11px;
+    font-weight:700;
+    padding:3px 9px;
+    border-radius:999px;
+    color:#fff;
+  }
+  .tag.child{background:var(--pine);}
+  .tag.parent{background:var(--sky);}
+  button.primary{
+    background:var(--pine-dark);
+    color:#fff;
+    border:none;
+    padding:12px 18px;
+    border-radius:10px;
+    font-family:'Work Sans',sans-serif;
+    font-weight:600;
+    font-size:14px;
+    cursor:pointer;
+    width:100%;
+  }
+  button.primary:active{opacity:.85;}
+  button.ghost{
+    background:none;
+    border:1.5px solid var(--line);
+    color:var(--ink);
+    padding:10px 16px;
+    border-radius:10px;
+    font-weight:600;
+    font-size:13px;
+    cursor:pointer;
+  }
+  button.link{
+    background:none;
+    border:none;
+    color:var(--muted);
+    text-decoration:underline;
+    font-size:12px;
+    cursor:pointer;
+    padding:4px;
+  }
+  label{
+    display:block;
+    font-size:12px;
+    font-weight:600;
+    color:var(--muted);
+    margin:12px 0 4px;
+  }
+  input, select{
+    width:100%;
+    padding:11px 12px;
+    border:1.5px solid var(--line);
+    border-radius:9px;
+    font-family:'Work Sans',sans-serif;
+    font-size:15px;
+    background:#fffdf9;
+  }
+  .row2{display:flex; gap:10px;}
+  .row2 > div{flex:1;}
+  .back-btn{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    background:none;
+    border:none;
+    color:var(--pine-dark);
+    font-weight:600;
+    font-size:14px;
+    cursor:pointer;
+    padding:0 0 14px;
+  }
+  .doorframe{
+    position:relative;
+    background:linear-gradient(180deg, #fffdf9, #f9f4ec);
+    border:1.5px solid var(--line);
+    border-radius:14px;
+    padding:18px 14px 18px 54px;
+    margin:16px 0;
+    overflow:hidden;
+  }
+  .doorframe .mark{
+    position:relative;
+    display:flex;
+    align-items:center;
+    height:34px;
+    border-bottom:1px dashed var(--line);
+  }
+  .doorframe .mark:last-child{border-bottom:none;}
+  .doorframe .mark .stub{
+    position:absolute;
+    left:-42px;
+    width:34px;
+    height:2px;
+    background:var(--clay);
+  }
+  .doorframe .mark .label{
+    font-size:12px;
+    color:var(--ink);
+    font-weight:600;
+  }
+  .doorframe .mark .date{
+    font-size:11px;
+    color:var(--muted);
+    margin-left:8px;
+  }
+  .stat-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+    margin-top:14px;
+  }
+  .stat-box{
+    background:#fbf8f2;
+    border:1.5px solid var(--line);
+    border-radius:10px;
+    padding:12px 14px;
+  }
+  .stat-box .num{
+    font-family:'Fraunces',serif;
+    font-size:22px;
+    font-weight:700;
+    color:var(--pine-dark);
+  }
+  .stat-box.clay .num{color:var(--clay);}
+  .stat-box .lbl{
+    font-size:11px;
+    color:var(--muted);
+    margin-top:2px;
+  }
+  .note{
+    font-size:11.5px;
+    color:var(--muted);
+    background:#f2ede1;
+    border-left:3px solid var(--clay);
+    padding:9px 12px;
+    border-radius:6px;
+    margin-top:14px;
+    line-height:1.5;
+  }
+  .chart-box{
+    margin-top:10px;
+    background:#fffdf9;
+    border:1.5px solid var(--line);
+    border-radius:12px;
+    padding:14px 10px;
+  }
+  .empty{
+    text-align:center;
+    padding:40px 20px;
+    color:var(--muted);
+  }
+  .empty .display{
+    color:var(--pine-dark);
+    font-size:19px;
+    margin-bottom:6px;
+  }
+  .modal-bg{
+    position:fixed; inset:0;
+    background:rgba(38,51,43,0.35);
+    display:flex; align-items:flex-end;
+    z-index:50;
+  }
+  .modal{
+    background:var(--paper);
+    width:100%;
+    border-radius:20px 20px 0 0;
+    padding:22px 20px 30px;
+    max-height:88vh;
+    overflow-y:auto;
+  }
+  .modal h3{margin:0 0 4px;}
+  .modal-close{
+    float:right;
+    background:none;border:none;
+    font-size:20px;color:var(--muted);
+    cursor:pointer;
+  }
+  .loading{
+    text-align:center;
+    padding:60px 20px;
+    color:var(--muted);
+    font-size:14px;
+  }
+  .toast{
+    position:fixed;
+    bottom:20px; left:50%;
+    transform:translateX(-50%);
+    background:var(--pine-dark);
+    color:#fff;
+    padding:11px 18px;
+    border-radius:999px;
+    font-size:13px;
+    font-weight:600;
+    z-index:100;
+    box-shadow:0 4px 14px rgba(0,0,0,0.2);
+  }
+  .delete-x{
+    background:none;border:none;color:var(--muted);
+    font-size:15px; cursor:pointer; padding:4px 8px;
+  }
+  .record-item{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:10px 4px;
+    border-bottom:1px solid var(--line);
+    font-size:13.5px;
+  }
+  .record-item:last-child{border-bottom:none;}
+</style>
+</head>
+<body>
+<div class="wrap" id="app">
+  <div class="loading">불러오는 중…</div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+import {
+  getFirestore, collection, doc, addDoc, getDocs, deleteDoc,
+  query, orderBy, onSnapshot, setDoc, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyD_W7nAX1EcGqGx6-Vk3AhILxA0cN6UmMI",
+  authDomain: "healthamily-8cfd4.firebaseapp.com",
+  projectId: "healthamily-8cfd4",
+  storageBucket: "healthamily-8cfd4.firebasestorage.app",
+  messagingSenderId: "1061969220182",
+  appId: "1:1061969220182:web:0fd09db16b4bc9c94e21f7"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+/* ---------- 대략적 참고 성장 평균치 (질병관리청 공식 수치표가 아닌 근사 추정용) ---------- */
+/* ages in months -> [heightCm, weightKg] approx mean, per sex. 참고용, 정확한 진단 아님. */
+const GROWTH_REF = {
+  male: {
+    ages: [0,3,6,9,12,18,24,36,48,60,72,84,96,108,120,132,144,156,168,180,192,204,216],
+    height: [50,61,68,72,76,82,87,96,103,110,116,122,128,134,141,149,158,166,171,173,174,174,174],
+    weight: [3.4,6.4,8.4,9.9,10.2,11.5,13,15,17,19,22,25,29,33,38,44,51,58,63,66,68,69,70]
+  },
+  female: {
+    ages: [0,3,6,9,12,18,24,36,48,60,72,84,96,108,120,132,144,156,168,180,192,204,216],
+    height: [49,60,66,70,74,80,85,95,102,109,115,121,128,136,145,152,157,159,160,160,161,161,161],
+    weight: [3.2,5.8,7.8,9.2,9.5,10.8,12.5,14.5,16.5,18.5,21,24,28,33,39,45,49,52,54,55,56,56,57]
+  }
+};
+
+function interp(xs, ys, x){
+  if(x<=xs[0]) return ys[0];
+  if(x>=xs[xs.length-1]) return ys[ys.length-1];
+  for(let i=0;i<xs.length-1;i++){
+    if(x>=xs[i] && x<=xs[i+1]){
+      const t=(x-xs[i])/(xs[i+1]-xs[i]);
+      return ys[i]+t*(ys[i+1]-ys[i]);
+    }
+  }
+  return ys[ys.length-1];
+}
+
+// 대략적 백분위 추정 (정규분포 근사, CV 고정치 사용 — 참고용)
+function estimatePercentile(value, mean, cvPercent){
+  const sd = mean * (cvPercent/100);
+  const z = (value-mean)/sd;
+  // 표준정규 CDF 근사
+  const t = 1/(1+0.2316419*Math.abs(z));
+  const d = 0.3989423*Math.exp(-z*z/2);
+  let p = d*t*(0.3193815+t*(-0.3565638+t*(1.781478+t*(-1.821256+t*1.330274))));
+  p = z>0 ? 1-p : p;
+  return Math.round(p*100);
+}
+
+function ageInMonths(birthDate, atDate){
+  const b = new Date(birthDate), a = new Date(atDate);
+  return (a.getFullYear()-b.getFullYear())*12 + (a.getMonth()-b.getMonth()) + (a.getDate()-b.getDate())/30;
+}
+
+function fmtDate(d){
+  const dt = new Date(d);
+  return `${dt.getFullYear()}.${String(dt.getMonth()+1).padStart(2,'0')}.${String(dt.getDate()).padStart(2,'0')}`;
+}
+
+/* ---------- state ---------- */
+let members = [];
+let records = {}; // memberId -> [records] sorted by date asc
+let currentView = { name:'list' }; // list | detail | addMember | addRecord
+let unsubMembers = null;
+let recordUnsubs = {};
+
+const membersCol = collection(db, 'members');
+
+function listenMembers(){
+  unsubMembers = onSnapshot(query(membersCol, orderBy('createdAt','asc')), (snap)=>{
+    members = snap.docs.map(d=>({id:d.id, ...d.data()}));
+    members.forEach(m=>{
+      if(!recordUnsubs[m.id]) listenRecords(m.id);
+    });
+    render();
+  });
+}
+
+function listenRecords(memberId){
+  const col = collection(db, 'members', memberId, 'records');
+  recordUnsubs[memberId] = onSnapshot(query(col, orderBy('date','asc')), (snap)=>{
+    records[memberId] = snap.docs.map(d=>({id:d.id, ...d.data()}));
+    render();
+  });
+}
+
+async function addMember(data){
+  await addDoc(membersCol, {...data, createdAt: serverTimestamp()});
+}
+
+async function addRecord(memberId, data){
+  const col = collection(db, 'members', memberId, 'records');
+  await addDoc(col, data);
+}
+
+async function removeRecord(memberId, recordId){
+  await deleteDoc(doc(db, 'members', memberId, 'records', recordId));
+}
+
+async function removeMember(memberId){
+  await deleteDoc(doc(db, 'members', memberId));
+}
+
+function showToast(msg){
+  const t = document.createElement('div');
+  t.className='toast';
+  t.textContent=msg;
+  document.body.appendChild(t);
+  setTimeout(()=>t.remove(), 2200);
+}
+
+/* ---------- render ---------- */
+function render(){
+  const el = document.getElementById('app');
+  if(currentView.name==='list') el.innerHTML = renderList();
+  else if(currentView.name==='detail') el.innerHTML = renderDetail(currentView.memberId);
+  el.innerHTML += renderModals();
+  bindEvents();
+  if(currentView.name==='detail'){
+    const m = members.find(x=>x.id===currentView.memberId);
+    if(m) drawChart(m);
+  }
+}
+
+function renderHeader(){
+  return `
+    <header class="top">
+      <div>
+        <h1>Health<span>amily</span></h1>
+        <div class="subtitle">우리 가족 성장 · 체중 기록</div>
+      </div>
+    </header>`;
+}
+
+function renderList(){
+  const children = members.filter(m=>m.type==='child');
+  const parents = members.filter(m=>m.type==='parent');
+  const renderRow = (m)=>{
+    const recs = records[m.id]||[];
+    const last = recs[recs.length-1];
+    const metaText = last ? `최근 ${fmtDate(last.date)} · ${last.height?last.height+'cm ':''}${last.weight?last.weight+'kg':''}` : '기록 없음';
+    return `
+      <div class="member-row" data-open="${m.id}">
+        <div>
+          <div class="name">${m.name} <span class="tag ${m.type}">${m.type==='child'?'자녀':'부모'}</span></div>
+          <div class="meta">${metaText}</div>
+        </div>
+        <div style="font-size:20px;color:var(--muted);">›</div>
+      </div>`;
+  };
+
+  return `
+    ${renderHeader()}
+    ${members.length===0 ? `
+      <div class="empty">
+        <div class="display">가족 구성원을 추가해보세요</div>
+        <div>이름과 생년월일만 입력하면 바로 기록을 시작할 수 있어요.</div>
+      </div>` : `
+      ${children.length>0 ? `<h3 style="margin:6px 0 10px;font-size:14px;color:var(--muted);">자녀</h3>${children.map(renderRow).join('')}`:''}
+      ${parents.length>0 ? `<h3 style="margin:18px 0 10px;font-size:14px;color:var(--muted);">부모</h3>${parents.map(renderRow).join('')}`:''}
+    `}
+    <div style="margin-top:20px;">
+      <button class="primary" id="btn-add-member">+ 가족 구성원 추가</button>
+    </div>
+  `;
+}
+
+function computeChildStats(m, recs){
+  if(recs.length===0) return null;
+  const last = recs[recs.length-1];
+  const prev = recs.length>1 ? recs[recs.length-2] : null;
+  const first = recs[0];
+
+  const heightDiff = prev ? (last.height - prev.height).toFixed(1) : null;
+  const weightDiff = prev ? (last.weight - prev.weight).toFixed(1) : null;
+
+  const totalDays = (new Date(last.date) - new Date(first.date))/(1000*60*60*24);
+  const totalMonths = totalDays/30.4;
+  const heightGrowth = last.height - first.height;
+  const monthlyRate = totalMonths>0.5 ? (heightGrowth/totalMonths).toFixed(2) : null;
+
+  let percentileHeight = null, percentileWeight = null;
+  if(m.birthDate && m.gender){
+    const ref = GROWTH_REF[m.gender];
+    const ageM = ageInMonths(m.birthDate, last.date);
+    const meanH = interp(ref.ages, ref.height, ageM);
+    const meanW = interp(ref.ages, ref.weight, ageM);
+    percentileHeight = estimatePercentile(last.height, meanH, 6);
+    percentileWeight = estimatePercentile(last.weight, meanW, 13);
+  }
+
+  return { last, prev, heightDiff, weightDiff, monthlyRate, percentileHeight, percentileWeight };
+}
+
+function renderDetail(memberId){
+  const m = members.find(x=>x.id===memberId);
+  if(!m) return renderList();
+  const recs = records[m.id]||[];
+  const isChild = m.type==='child';
+  const stats = isChild ? computeChildStats(m, recs) : null;
+
+  let weightGoalBlock = '';
+  if(!isChild && m.targetWeight && recs.length>0){
+    const last = recs[recs.length-1];
+    const first = recs[0];
+    const lost = (first.weight - last.weight).toFixed(1);
+    const remaining = (last.weight - m.targetWeight).toFixed(1);
+    weightGoalBlock = `
+      <div class="stat-grid">
+        <div class="stat-box"><div class="num">${last.weight}kg</div><div class="lbl">현재 체중</div></div>
+        <div class="stat-box clay"><div class="num">${remaining>0?remaining:0}kg</div><div class="lbl">목표까지 남은 양</div></div>
+        <div class="stat-box"><div class="num">${lost>0?lost:0}kg</div><div class="lbl">지금까지 감량</div></div>
+        <div class="stat-box"><div class="num">${m.targetWeight}kg</div><div class="lbl">목표 체중</div></div>
+      </div>`;
+  }
+
+  let childStatBlock = '';
+  if(isChild && stats){
+    childStatBlock = `
+      <div class="stat-grid">
+        <div class="stat-box"><div class="num">${stats.last.height}cm</div><div class="lbl">현재 키 ${stats.heightDiff!==null?`(직전 대비 +${stats.heightDiff}cm)`:''}</div></div>
+        <div class="stat-box clay"><div class="num">${stats.last.weight}kg</div><div class="lbl">현재 체중 ${stats.weightDiff!==null?`(직전 대비 ${stats.weightDiff>0?'+':''}${stats.weightDiff}kg)`:''}</div></div>
+        ${stats.monthlyRate ? `<div class="stat-box"><div class="num">${stats.monthlyRate}cm</div><div class="lbl">월평균 키 성장 속도</div></div>`:''}
+        ${stats.percentileHeight!==null ? `<div class="stat-box"><div class="num">${stats.percentileHeight}%</div><div class="lbl">또래 대비 키 백분위(추정)</div></div>`:''}
+      </div>
+      <div class="note">※ 백분위 수치는 질병관리청 공식 성장도표가 아닌 근사 추정값이에요. 정확한 판정이 필요하면 소아과 검진 시 확인해주세요.</div>
+    `;
+  }
+
+  const doorframeMarks = recs.slice().reverse().slice(0,8).map(r=>`
+    <div class="mark">
+      <div class="stub"></div>
+      <span class="label">${r.height?r.height+' cm':''}${r.weight?' · '+r.weight+' kg':''}</span>
+      <span class="date">${fmtDate(r.date)}</span>
+    </div>
+  `).join('') || `<div style="color:var(--muted);font-size:13px;padding:10px 0;">아직 기록이 없어요</div>`;
+
+  const recordListItems = recs.slice().reverse().map(r=>`
+    <div class="record-item">
+      <span>${fmtDate(r.date)} · ${r.height?r.height+'cm ':''}${r.weight?r.weight+'kg':''}</span>
+      <button class="delete-x" data-del-record="${m.id}|${r.id}">✕</button>
+    </div>
+  `).join('') || '<div style="color:var(--muted);font-size:13px;">기록 없음</div>';
+
+  return `
+    <button class="back-btn" id="btn-back">← 목록으로</button>
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+        <div>
+          <h2 style="margin:0 0 4px;">${m.name}</h2>
+          <div class="subtitle">${m.type==='child'?'자녀':'부모'} ${m.birthDate?`· ${m.birthDate}`:''} ${m.gender==='male'?'· 남':m.gender==='female'?'· 여':''}</div>
+        </div>
+        <button class="delete-x" id="btn-del-member" title="구성원 삭제">✕</button>
+      </div>
+
+      ${isChild ? childStatBlock : weightGoalBlock}
+
+      ${recs.length>1 ? `<div class="chart-box"><canvas id="growthChart" height="160"></canvas></div>` : ''}
+
+      <div class="doorframe">${doorframeMarks}</div>
+
+      <button class="primary" id="btn-add-record" style="margin-top:6px;">+ 오늘 기록 추가</button>
+    </div>
+
+    <div class="card">
+      <h3 style="margin:0 0 10px;font-size:15px;">전체 기록</h3>
+      ${recordListItems}
+    </div>
+  `;
+}
+
+function renderModals(){
+  if(currentView.modal==='addMember'){
+    return `
+      <div class="modal-bg" id="modal-bg">
+        <div class="modal">
+          <button class="modal-close" id="modal-close">✕</button>
+          <h3>가족 구성원 추가</h3>
+          <div class="subtitle">자녀는 생년월일과 성별을 입력하면 성장 비교가 가능해져요.</div>
+          <label>구분</label>
+          <select id="f-type">
+            <option value="child">자녀</option>
+            <option value="parent">부모</option>
+          </select>
+          <label>이름</label>
+          <input id="f-name" placeholder="예: 하은" />
+          <div id="child-fields">
+            <label>생년월일</label>
+            <input id="f-birth" type="date" />
+            <label>성별</label>
+            <select id="f-gender">
+              <option value="male">남</option>
+              <option value="female">여</option>
+            </select>
+          </div>
+          <div id="parent-fields" style="display:none;">
+            <label>목표 체중 (kg, 선택)</label>
+            <input id="f-target" type="number" step="0.1" placeholder="예: 68" />
+          </div>
+          <button class="primary" id="save-member" style="margin-top:18px;">추가하기</button>
+        </div>
+      </div>`;
+  }
+  if(currentView.modal==='addRecord'){
+    return `
+      <div class="modal-bg" id="modal-bg">
+        <div class="modal">
+          <button class="modal-close" id="modal-close">✕</button>
+          <h3>기록 추가</h3>
+          <label>날짜</label>
+          <input id="r-date" type="date" value="${new Date().toISOString().slice(0,10)}" />
+          <div class="row2">
+            <div>
+              <label>키 (cm)</label>
+              <input id="r-height" type="number" step="0.1" placeholder="선택" />
+            </div>
+            <div>
+              <label>몸무게 (kg)</label>
+              <input id="r-weight" type="number" step="0.1" placeholder="선택" />
+            </div>
+          </div>
+          <button class="primary" id="save-record" style="margin-top:18px;">저장하기</button>
+        </div>
+      </div>`;
+  }
+  return '';
+}
+
+function drawChart(m){
+  const canvas = document.getElementById('growthChart');
+  if(!canvas) return;
+  const recs = records[m.id]||[];
+  if(window._chartInstance) window._chartInstance.destroy();
+  const labels = recs.map(r=>fmtDate(r.date));
+  const heights = recs.map(r=>r.height||null);
+  const weights = recs.map(r=>r.weight||null);
+  window._chartInstance = new Chart(canvas.getContext('2d'), {
+    type:'line',
+    data:{
+      labels,
+      datasets:[
+        {label:'키(cm)', data:heights, borderColor:'#3f6b53', backgroundColor:'#3f6b53', tension:.3, yAxisID:'y'},
+        {label:'몸무게(kg)', data:weights, borderColor:'#d97a5c', backgroundColor:'#d97a5c', tension:.3, yAxisID:'y1'}
+      ]
+    },
+    options:{
+      responsive:true,
+      interaction:{mode:'index', intersect:false},
+      plugins:{legend:{labels:{font:{family:'Work Sans'}}}},
+      scales:{
+        y:{position:'left', title:{display:true,text:'cm'}},
+        y1:{position:'right', title:{display:true,text:'kg'}, grid:{drawOnChartArea:false}}
+      }
+    }
+  });
+}
+
+function bindEvents(){
+  document.querySelectorAll('[data-open]').forEach(elm=>{
+    elm.onclick = ()=>{ currentView = {name:'detail', memberId:elm.dataset.open}; render(); };
+  });
+  const back = document.getElementById('btn-back');
+  if(back) back.onclick = ()=>{ currentView = {name:'list'}; render(); };
+
+  const addMemberBtn = document.getElementById('btn-add-member');
+  if(addMemberBtn) addMemberBtn.onclick = ()=>{ currentView.modal='addMember'; render(); };
+
+  const typeSelect = document.getElementById('f-type');
+  if(typeSelect) typeSelect.onchange = (e)=>{
+    document.getElementById('child-fields').style.display = e.target.value==='child'?'block':'none';
+    document.getElementById('parent-fields').style.display = e.target.value==='parent'?'block':'none';
+  };
+
+  const modalClose = document.getElementById('modal-close');
+  if(modalClose) modalClose.onclick = ()=>{ delete currentView.modal; render(); };
+  const modalBg = document.getElementById('modal-bg');
+  if(modalBg) modalBg.onclick = (e)=>{ if(e.target.id==='modal-bg'){ delete currentView.modal; render(); } };
+
+  const saveMemberBtn = document.getElementById('save-member');
+  if(saveMemberBtn) saveMemberBtn.onclick = async ()=>{
+    const type = document.getElementById('f-type').value;
+    const name = document.getElementById('f-name').value.trim();
+    if(!name){ showToast('이름을 입력해주세요'); return; }
+    const data = { type, name };
+    if(type==='child'){
+      data.birthDate = document.getElementById('f-birth').value || null;
+      data.gender = document.getElementById('f-gender').value;
+    } else {
+      const t = document.getElementById('f-target').value;
+      data.targetWeight = t ? parseFloat(t) : null;
+    }
+    await addMember(data);
+    delete currentView.modal;
+    showToast('가족 구성원을 추가했어요');
+  };
+
+  const addRecordBtn = document.getElementById('btn-add-record');
+  if(addRecordBtn) addRecordBtn.onclick = ()=>{ currentView.modal='addRecord'; render(); };
+
+  const saveRecordBtn = document.getElementById('save-record');
+  if(saveRecordBtn) saveRecordBtn.onclick = async ()=>{
+    const date = document.getElementById('r-date').value;
+    const height = document.getElementById('r-height').value;
+    const weight = document.getElementById('r-weight').value;
+    if(!date || (!height && !weight)){ showToast('날짜와 키/몸무게 중 하나는 입력해주세요'); return; }
+    const data = { date };
+    if(height) data.height = parseFloat(height);
+    if(weight) data.weight = parseFloat(weight);
+    await addRecord(currentView.memberId, data);
+    delete currentView.modal;
+    showToast('기록을 저장했어요');
+  };
+
+  document.querySelectorAll('[data-del-record]').forEach(elm=>{
+    elm.onclick = async ()=>{
+      const [memberId, recordId] = elm.dataset.delRecord.split('|');
+      if(confirm('이 기록을 삭제할까요?')){
+        await removeRecord(memberId, recordId);
+        showToast('기록을 삭제했어요');
+      }
+    };
+  });
+
+  const delMemberBtn = document.getElementById('btn-del-member');
+  if(delMemberBtn) delMemberBtn.onclick = async ()=>{
+    if(confirm(`${members.find(m=>m.id===currentView.memberId)?.name}님을 삭제할까요? 모든 기록도 함께 사라져요.`)){
+      await removeMember(currentView.memberId);
+      currentView = {name:'list'};
+      showToast('삭제했어요');
+    }
+  };
+}
+
+listenMembers();
+</script>
+</body>
+</html>
