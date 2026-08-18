@@ -253,6 +253,22 @@
     border:1px solid var(--line);
     border-radius:16px;
     padding:16px 12px;
+    height:240px;
+    position:relative;
+  }
+  .chart-box canvas{
+    width:100% !important;
+    height:100% !important;
+  }
+  .chart-fallback{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    height:100%;
+    color:var(--muted);
+    font-size:12.5px;
+    text-align:center;
+    padding:0 16px;
   }
   .empty{
     text-align:center;
@@ -1279,6 +1295,13 @@ function renderModals(){
 function drawChart(m){
   const canvas = document.getElementById('growthChart');
   if(!canvas) return;
+  const container = canvas.parentElement;
+
+  if(typeof Chart === 'undefined'){
+    container.innerHTML = '<div class="chart-fallback">그래프를 불러오지 못했어요.<br>인터넷 연결을 확인하고 새로고침 해보세요.</div>';
+    return;
+  }
+
   const recs = records[m.id]||[];
   if(window._chartInstance) window._chartInstance.destroy();
   const labels = recs.map(r=>fmtDate(r.date));
@@ -1311,16 +1334,21 @@ function drawChart(m){
     }
   }
 
-  window._chartInstance = new Chart(canvas.getContext('2d'), {
-    type:'line',
-    data:{ labels, datasets },
-    options:{
-      responsive:true,
-      interaction:{mode:'index', intersect:false},
-      plugins:{legend:{labels:{font:{family:'Work Sans'}}}},
-      scales
-    }
-  });
+  try{
+    window._chartInstance = new Chart(canvas.getContext('2d'), {
+      type:'line',
+      data:{ labels, datasets },
+      options:{
+        responsive:true,
+        maintainAspectRatio:false,
+        interaction:{mode:'index', intersect:false},
+        plugins:{legend:{labels:{font:{family:'Pretendard Variable'}}}},
+        scales
+      }
+    });
+  } catch(e){
+    container.innerHTML = '<div class="chart-fallback">그래프를 그리는 중 문제가 생겼어요.</div>';
+  }
 }
 
 function pickRandom(arr, n){
